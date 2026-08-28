@@ -1,0 +1,816 @@
+/* All styles are scoped under #ccg-dashboard so the embed cannot leak into the host page. */
+
+#ccg-dashboard {
+  --ccg-text: #1b1b1b;
+  --ccg-text-muted: #313131;
+  --ccg-bg: #ffffff;
+  --ccg-rule: #d6d6d6;
+  --ccg-focus: #0b4778;
+  --ccg-measure: 42rem;
+  --ccg-space: 1rem;
+
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ccg-text);
+  background: var(--ccg-bg);
+  text-size-adjust: 100%;
+}
+
+#ccg-dashboard *,
+#ccg-dashboard *::before,
+#ccg-dashboard *::after {
+  box-sizing: inherit;
+}
+
+#ccg-dashboard h1,
+#ccg-dashboard h2,
+#ccg-dashboard h3,
+#ccg-dashboard p,
+#ccg-dashboard figure,
+#ccg-dashboard blockquote,
+#ccg-dashboard ul,
+#ccg-dashboard ol {
+  margin: 0;
+}
+
+#ccg-dashboard ul,
+#ccg-dashboard ol {
+  padding: 0;
+  list-style: none;
+}
+
+#ccg-dashboard img,
+#ccg-dashboard svg {
+  display: block;
+  max-width: 100%;
+}
+
+#ccg-dashboard button,
+#ccg-dashboard input,
+#ccg-dashboard select,
+#ccg-dashboard textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Heading sizes are fluid so long words never force horizontal scroll at 360px. */
+#ccg-dashboard h1,
+#ccg-dashboard h2,
+#ccg-dashboard h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+#ccg-dashboard h1 {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+}
+
+#ccg-dashboard h2 {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+}
+
+#ccg-dashboard h3 {
+  font-size: 1.125rem;
+}
+
+#ccg-dashboard p {
+  text-wrap: pretty;
+}
+
+/* Visible focus is a hard requirement — never remove this without a replacement. */
+#ccg-dashboard :focus-visible {
+  outline: 3px solid var(--ccg-focus);
+  outline-offset: 2px;
+}
+
+#ccg-dashboard .ccg-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   PAGE SKELETON (Task 04)
+   ========================================================================== */
+
+#ccg-dashboard {
+  --ccg-measure-wide: 60rem;
+  --ccg-section-gap: 1.5rem;
+  --ccg-placeholder-bg: #f4f4f4;
+}
+
+/* Sections hold the readable measure; the map and table sections are allowed
+   to outgrow it on wider viewports (see the desktop framing in the wireframe). */
+#ccg-dashboard .ccg-section {
+  max-width: var(--ccg-measure);
+  margin-inline: auto;
+  padding-inline: var(--ccg-space);
+}
+
+#ccg-dashboard .ccg-section > * + * {
+  margin-block-start: var(--ccg-space);
+}
+
+#ccg-dashboard main > .ccg-section,
+#ccg-dashboard > footer.ccg-section {
+  margin-block-start: var(--ccg-section-gap);
+}
+
+#ccg-dashboard > footer.ccg-section {
+  padding-block: 2rem;
+  border-block-start: 1px solid var(--ccg-rule);
+}
+
+#ccg-dashboard > footer.ccg-section h3 {
+  margin-block-start: 1.5rem;
+}
+
+#ccg-dashboard > header.ccg-section {
+  padding-block-start: var(--ccg-space);
+}
+
+#ccg-dashboard .ccg-subtitle {
+  color: var(--ccg-text-muted);
+  font-size: 1.125rem;
+}
+
+/* ==========================================================================
+   MAP ACCESSIBILITY (Task 07)
+   ========================================================================== */
+
+/* Map 2's caption is rewritten on every control change and its length varies by a line
+   or two. Reserving the common height keeps the page below the map still while the
+   reader is using the controls. Sized to the median caption, not the longest one — the
+   longest reserves a block of dead space under every short caption, and the controls the
+   reader is operating sit above this, so they never move either way. Measured across all
+   35 select pairs: median 5 lines at 360px (longest 7), 3 lines from 640px up
+   (longest 4). */
+#ccg-dashboard #ccg-map2-caption {
+  min-height: 7.5em;
+}
+
+@media (min-width: 640px) {
+  #ccg-dashboard #ccg-map2-caption {
+    min-height: 4.5em;
+  }
+}
+
+/* Off-screen until focused, then pinned to the top of the embed. */
+#ccg-dashboard .ccg-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+}
+
+#ccg-dashboard .ccg-skip-link:focus {
+  position: static;
+  display: inline-block;
+  margin: var(--ccg-space);
+  padding: 0.5rem 0.75rem;
+  background: var(--ccg-bg);
+  border: 1px solid var(--ccg-rule);
+}
+
+#ccg-dashboard .ccg-stat {
+  padding-block: 0.25rem;
+}
+
+#ccg-dashboard .ccg-stat__number {
+  font-size: clamp(2.25rem, 10vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
+}
+
+#ccg-dashboard .ccg-stat__label {
+  margin-block-start: 0.25rem;
+  color: var(--ccg-text-muted);
+  max-width: 30ch;
+}
+
+#ccg-dashboard .ccg-figure {
+  margin: 0;
+  margin-block-start: 1.25rem;
+}
+
+#ccg-dashboard .ccg-figure__caption {
+  margin-block-start: 0.5rem;
+  color: var(--ccg-text-muted);
+  font-size: 0.9375rem;
+}
+
+#ccg-dashboard .ccg-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ccg-space);
+}
+
+/* A select is as wide as its longest option; without this, the grid item's
+   auto minimum pushes the page past 360px. */
+#ccg-dashboard .ccg-field {
+  min-width: 0;
+}
+
+#ccg-dashboard .ccg-field label {
+  display: block;
+  font-weight: 600;
+  margin-block-end: 0.25rem;
+}
+
+#ccg-dashboard .ccg-field select,
+#ccg-dashboard .ccg-field input {
+  width: 100%;
+  max-width: 24rem;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+}
+
+#ccg-dashboard .ccg-field input {
+  border: 1px solid var(--ccg-rule);
+}
+
+/* ==========================================================================
+   MAP CONTROLS (Task 06)
+   ========================================================================== */
+
+#ccg-dashboard .ccg-controls__actions {
+  display: flex;
+  align-items: end;
+}
+
+/* A plain button, sized to stay a comfortable touch target at 360px. */
+#ccg-dashboard .ccg-button {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ccg-focus);
+  border-radius: 0.125rem;
+  background: var(--ccg-bg);
+  color: var(--ccg-focus);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#ccg-dashboard .ccg-button:hover {
+  background: #eef4fa;
+}
+
+@media (min-width: 640px) {
+  #ccg-dashboard .ccg-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #ccg-dashboard .ccg-controls__actions {
+    grid-column: 1 / -1;
+  }
+}
+
+#ccg-dashboard .ccg-search-status {
+  color: var(--ccg-text-muted);
+}
+
+#ccg-dashboard .ccg-table-container {
+  overflow-x: auto;
+}
+
+#ccg-dashboard .ccg-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ccg-space);
+  justify-content: space-between;
+  color: var(--ccg-text-muted);
+}
+
+#ccg-dashboard .ccg-practice-list dt {
+  font-weight: 700;
+  margin-block-start: var(--ccg-space);
+}
+
+#ccg-dashboard .ccg-practice-list dd {
+  margin-inline-start: 0;
+  color: var(--ccg-text-muted);
+}
+
+#ccg-dashboard .ccg-cta {
+  display: inline-block;
+  color: var(--ccg-focus);
+}
+
+@media (min-width: 900px) {
+  #ccg-dashboard .ccg-section--wide {
+    max-width: var(--ccg-measure-wide);
+  }
+
+  /* Only the graphic gets the extra width; prose stays at the reading measure
+     and stays centerd, so every section shares one left edge. */
+  #ccg-dashboard .ccg-section--wide > :not(.ccg-figure):not(.ccg-table-container):not(.ccg-pagination) {
+    /* The measure minus the section padding, so this left edge matches the
+       narrow sections' text exactly. */
+    max-width: calc(var(--ccg-measure) - var(--ccg-space) * 2);
+    margin-inline: auto;
+  }
+
+  #ccg-dashboard .ccg-figure {
+    margin-block-start: 1.5rem;
+  }
+}
+
+/* ==========================================================================
+   MAP (Task 05)
+   ========================================================================== */
+
+#ccg-dashboard {
+  --ccg-map-land: #e9edf0;
+  --ccg-map-outline: #6f6f6f;
+  --ccg-map-state: #ffffff;
+  --ccg-map-bubble-stroke: #10365e;
+  --ccg-map-accent: #9a3412;
+}
+
+#ccg-dashboard .ccg-map {
+  position: relative;
+}
+
+#ccg-dashboard .ccg-map__svg {
+  width: 100%;
+  height: auto;
+}
+
+#ccg-dashboard .ccg-map__land {
+  fill: var(--ccg-map-land);
+}
+
+/* Hairlines stay one device pixel at every width, so the map reads the same at
+   360px and 1280px without a second set of tuned stroke widths. */
+#ccg-dashboard .ccg-map__states,
+#ccg-dashboard .ccg-map__outline,
+#ccg-dashboard .ccg-map__bubble,
+#ccg-dashboard .ccg-map__ring,
+#ccg-dashboard .ccg-map__leader {
+  vector-effect: non-scaling-stroke;
+}
+
+#ccg-dashboard .ccg-map__states {
+  fill: none;
+  stroke: var(--ccg-map-state);
+  stroke-width: 1;
+}
+
+#ccg-dashboard .ccg-map__outline {
+  fill: none;
+  stroke: var(--ccg-map-outline);
+  stroke-width: 1;
+}
+
+/* The stroke, not the fill, is what carries 3:1 against the land — the lightest two
+   steps of the sequential ramp are deliberately close to the basemap color. */
+#ccg-dashboard .ccg-map__bubble {
+  stroke: var(--ccg-map-bubble-stroke);
+  stroke-width: 1;
+  fill-opacity: 0.85;
+}
+
+#ccg-dashboard .ccg-map__ring {
+  fill: none;
+  stroke: var(--ccg-map-accent);
+  stroke-width: 2;
+}
+
+#ccg-dashboard .ccg-map__leader {
+  stroke: var(--ccg-map-accent);
+  stroke-width: 1.5;
+}
+
+/* Narrow viewports: the callouts stack under the map and the leader lines go away.
+   At 360px the map is ~330px wide and no stretch of ocean is wide enough to hold a
+   legible label, so the annotation says in words where its circle is. */
+#ccg-dashboard .ccg-map__annotation {
+  margin-block-start: 0.5rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 3px solid var(--ccg-map-accent);
+  font-size: 0.875rem;
+}
+
+#ccg-dashboard .ccg-map__annotation-city {
+  font-weight: 700;
+}
+
+#ccg-dashboard .ccg-map__leader {
+  display: none;
+}
+
+@media (min-width: 780px) {
+  #ccg-dashboard .ccg-map__leader {
+    display: inline;
+  }
+
+  /* Positions are percentages of the SVG box, which is exactly this container, so
+     label and leader line stay registered at every width. */
+  #ccg-dashboard .ccg-map__annotation {
+    position: absolute;
+    left: var(--ccg-annotation-left);
+    top: var(--ccg-annotation-top);
+    width: var(--ccg-annotation-width);
+    margin: 0;
+    padding: 0.125rem 0.25rem;
+    border: 0;
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 0.8125rem;
+    line-height: 1.25;
+  }
+
+  /* The leader line says where the city is; the sentence is only for the stacked layout. */
+  #ccg-dashboard .ccg-map__annotation-where {
+    display: none;
+  }
+}
+
+#ccg-dashboard .ccg-legend {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-start: 0.75rem;
+  font-size: 0.875rem;
+}
+
+#ccg-dashboard .ccg-legend__title {
+  font-weight: 600;
+}
+
+#ccg-dashboard .ccg-legend__items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-block-start: 0.25rem;
+}
+
+#ccg-dashboard .ccg-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+#ccg-dashboard .ccg-legend__dot {
+  flex: none;
+  width: var(--ccg-dot-size);
+  height: var(--ccg-dot-size);
+  border: 1px solid var(--ccg-map-bubble-stroke);
+  border-radius: 50%;
+  background: var(--ccg-dot-fill, transparent);
+}
+
+/* The size key uses one neutral swatch at four sizes, so nothing in it reads as a
+   position on the color ramp; the color key is the reverse — one size, six fills.
+   ccg-dashboard.js writes the other half of each pair from the same tables the
+   bubbles are drawn from. */
+#ccg-dashboard .ccg-legend__group--size .ccg-legend__dot {
+  --ccg-dot-fill: #c8d6e3;
+}
+
+#ccg-dashboard .ccg-legend__group--count .ccg-legend__dot {
+  --ccg-dot-size: 14px;
+}
+
+@media (min-width: 640px) {
+  #ccg-dashboard .ccg-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   TABLE (Task 08)
+   ========================================================================== */
+
+/* Written by hand rather than vendored from USWDS (D3 allows either): what we needed
+   was ~60 lines of rules, and copying USWDS's table CSS would have dragged in its
+   token layer to rescope. The accessible part of D3 — the markup and behavior — is
+   implemented in ccg-dashboard.js as specified. */
+
+#ccg-dashboard {
+  --ccg-table-stripe: #f6f7f8;
+  --ccg-table-head: #eef1f4;
+}
+
+#ccg-dashboard .ccg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+#ccg-dashboard .ccg-table__caption {
+  margin-block-end: 0.5rem;
+  color: var(--ccg-text-muted);
+  font-size: 0.875rem;
+  text-align: start;
+  text-wrap: pretty;
+}
+
+#ccg-dashboard .ccg-table th,
+#ccg-dashboard .ccg-table td {
+  padding: 0.5rem 0.5rem 0.5rem 0;
+  border-block-end: 1px solid var(--ccg-rule);
+  text-align: start;
+  vertical-align: top;
+}
+
+#ccg-dashboard .ccg-table thead th {
+  border-block-end: 2px solid var(--ccg-text);
+  background: var(--ccg-table-head);
+  padding-inline: 0.5rem;
+  font-weight: 700;
+}
+
+#ccg-dashboard .ccg-table tbody th {
+  font-weight: 600;
+}
+
+/* The count and the glyphs are narrow, fixed-content columns; the two name columns get
+   whatever is left, which is what keeps 360px from overflowing. */
+#ccg-dashboard .ccg-table__head-cell--state,
+#ccg-dashboard .ccg-table__head-cell--ccgCount,
+#ccg-dashboard .ccg-table__head-cell--details {
+  width: 1%;
+  white-space: nowrap;
+}
+
+#ccg-dashboard .ccg-table__head-cell--marks,
+#ccg-dashboard .ccg-table__marks {
+  width: 1%;
+  white-space: nowrap;
+}
+
+#ccg-dashboard .ccg-marks {
+  display: inline-block;
+}
+
+/* Fixed-width slots so a glyph lines up under its initial in the header. */
+#ccg-dashboard .ccg-marks__mark {
+  display: inline-block;
+  width: 1.15em;
+  text-align: center;
+  color: var(--ccg-text-muted);
+}
+
+/* Filled vs open glyph is the encoding; weight and color only reinforce it, so the
+   column still reads correctly in monochrome or with colors overridden. */
+#ccg-dashboard .ccg-marks__mark.is-reported {
+  color: var(--ccg-focus);
+  font-weight: 700;
+}
+
+#ccg-dashboard .ccg-table__actions {
+  padding-inline-end: 0;
+}
+
+#ccg-dashboard .ccg-button--small {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+}
+
+#ccg-dashboard .ccg-table-legend {
+  color: var(--ccg-text-muted);
+  font-size: 0.875rem;
+}
+
+#ccg-dashboard .ccg-table-legend__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-block-start: 0.25rem;
+}
+
+#ccg-dashboard .ccg-table-legend__item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+#ccg-dashboard .ccg-table-legend__initial {
+  font-weight: 700;
+  color: var(--ccg-text);
+}
+
+/* Narrow viewports: the same six cells, tightened until they fit inside 360px. Nothing
+   is clipped or truncated — the text gets smaller, the padding tighter, and long city
+   names hyphenate. */
+@media (max-width: 479px) {
+  /* Half-bleed: the table reclaims the section's side padding, which is 32px of the
+     ~312px it would otherwise have. Prose around it keeps its inset. */
+  #ccg-dashboard .ccg-table-container {
+    margin-inline: calc(var(--ccg-space) * -1);
+    padding-inline: 0.25rem 0;
+  }
+
+  /* 12px, the smallest step that fits six cells across 360px without clipping or
+     breaking words apart. Everything the row holds is repeated at full size in the
+     city profile below it. */
+  #ccg-dashboard .ccg-table {
+    font-size: 0.75rem;
+  }
+
+  #ccg-dashboard .ccg-table th,
+  #ccg-dashboard .ccg-table td {
+    padding: 0.375rem 0.125rem 0.375rem 0;
+  }
+
+  #ccg-dashboard .ccg-table thead th {
+    padding-inline: 0.125rem;
+    font-size: 0.75rem;
+  }
+
+  /* Long city names hyphenate rather than run the column wide. Words still break only
+     where a hyphen may fall — nothing is clipped and no word is cut mid-syllable. */
+  #ccg-dashboard .ccg-table tbody th {
+    hyphens: auto;
+  }
+
+  /* The button carries its own border, so the row needs a little air before the
+     table edge. */
+  #ccg-dashboard .ccg-table__actions {
+    white-space: nowrap;
+    padding-inline: 0.25rem;
+  }
+
+  #ccg-dashboard .ccg-marks__mark {
+    width: 0.8em;
+  }
+
+  #ccg-dashboard .ccg-button--small {
+    padding: 0.1875rem;
+    font-size: 0.75rem;
+  }
+
+  /* The sort arrow sits in the header cell's width budget. It shrinks with the cell,
+     and drops below the label rather than widening the column past what fits. */
+  #ccg-dashboard .ccg-table__sort {
+    flex-wrap: wrap;
+    gap: 0 0.125rem;
+  }
+
+  #ccg-dashboard .ccg-table__sort-arrow {
+    font-size: 0.625em;
+  }
+}
+
+/* ==========================================================================
+   CITY PROFILE ROWS (Task 08)
+   ========================================================================== */
+
+#ccg-dashboard .ccg-table__profile-row > td {
+  padding: 0.75rem 0.5rem 1rem;
+  background: var(--ccg-table-stripe);
+}
+
+#ccg-dashboard .ccg-profile > * + * {
+  margin-block-start: 0.75rem;
+}
+
+#ccg-dashboard .ccg-profile__practice h4 {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+#ccg-dashboard .ccg-profile__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 0.75rem;
+  margin: 0.25rem 0 0;
+}
+
+#ccg-dashboard .ccg-profile__fields dt {
+  font-weight: 600;
+}
+
+#ccg-dashboard .ccg-profile__fields dd {
+  margin: 0 0 0.375rem;
+  color: var(--ccg-text-muted);
+}
+
+@media (min-width: 560px) {
+  /* Term and value side by side once there is room for both without hyphenating. */
+  #ccg-dashboard .ccg-profile__fields {
+    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  }
+
+  #ccg-dashboard .ccg-profile__fields dt,
+  #ccg-dashboard .ccg-profile__fields dd {
+    margin-block-end: 0.25rem;
+  }
+}
+
+/* ==========================================================================
+   PAGINATION (Task 08)
+   ========================================================================== */
+
+#ccg-dashboard .ccg-pagination {
+  align-items: end;
+  margin-block-start: 0.75rem;
+}
+
+#ccg-dashboard .ccg-pagination__rows select {
+  width: auto;
+  min-width: 6rem;
+}
+
+#ccg-dashboard .ccg-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#ccg-dashboard .ccg-pagination__count {
+  min-width: 7rem;
+  text-align: center;
+}
+
+#ccg-dashboard .ccg-button:disabled {
+  border-color: var(--ccg-rule);
+  color: var(--ccg-text-muted);
+  background: var(--ccg-placeholder-bg);
+  cursor: default;
+}
+
+/* ==========================================================================
+   SORT + SEARCH + CITY NOT FOUND (Task 09)
+   ========================================================================== */
+
+/* The header button fills its cell so the whole header is the target, and it looks like
+   a header rather than a form control. */
+#ccg-dashboard .ccg-table__sort {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  text-align: start;
+  cursor: pointer;
+}
+
+#ccg-dashboard .ccg-table__sort:hover {
+  text-decoration: underline;
+}
+
+/* The arrow, not the color, is what says which way the column is sorted. */
+#ccg-dashboard .ccg-table__sort-arrow {
+  flex: none;
+  color: var(--ccg-text-muted);
+  font-size: 0.75em;
+}
+
+#ccg-dashboard .ccg-table__head-cell.is-sorted {
+  background: #dfe6ec;
+}
+
+#ccg-dashboard .ccg-table__head-cell.is-sorted .ccg-table__sort-arrow {
+  color: var(--ccg-focus);
+}
+
+#ccg-dashboard .ccg-not-found {
+  padding: var(--ccg-space);
+  border: 1px solid var(--ccg-rule);
+  background: var(--ccg-table-stripe);
+}
+
+#ccg-dashboard .ccg-not-found > * + *,
+#ccg-dashboard .ccg-not-found__lookup > * + * {
+  margin-block-start: 0.75rem;
+}
+
+#ccg-dashboard .ccg-not-found__list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+#ccg-dashboard .ccg-not-found__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+/* No animation exists yet — this is the scaffold every later task adds to. */
+@media (prefers-reduced-motion: reduce) {
+  #ccg-dashboard *,
+  #ccg-dashboard *::before,
+  #ccg-dashboard *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

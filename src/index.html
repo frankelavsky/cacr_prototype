@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCG Dashboard — dev page</title>
+<link rel="stylesheet" href="ccg-dashboard.css">
+</head>
+<body>
+
+<!--
+  Everything from <div id="ccg-dashboard"> to its closing tag is the embed markup: it is
+  the page's static structure and all of its author-written copy. ccg-dashboard.js does
+  not create any of it — it fills the empty slots below with values from CCG_DATA and
+  wires the controls up. Slots are marked either by an id, or by a data-ccg-* attribute.
+-->
+<div id="ccg-dashboard">
+
+  <a class="ccg-skip-link" href="#ccg-table-heading">Skip to the data table</a>
+
+  <header class="ccg-section">
+    <h1>[FILLER: dashboard title]</h1>
+    <p class="ccg-subtitle">[FILLER: one-sentence subtitle]</p>
+  </header>
+
+  <main>
+
+    <!-- Kept deliberately short: on a 360px viewport Map 1 has to start above the fold. -->
+    <section class="ccg-section" aria-labelledby="ccg-intro-heading">
+      <h2 id="ccg-intro-heading">[FILLER: intro heading]</h2>
+      <p>[FILLER: what this survey is and why it exists, 1-2 sentences]</p>
+
+      <div class="ccg-stat">
+        <p class="ccg-stat__number"><span data-ccg-stat="totalCities"></span></p>
+        <p class="ccg-stat__label">[FILLER: cities responded, across <span data-ccg-stat="statesRepresented"></span> states]</p>
+      </div>
+
+      <p>[FILLER: what the practices are, one sentence bridging to the numbers]</p>
+
+      <div class="ccg-stat">
+        <p class="ccg-stat__number"><span data-ccg-stat="citiesWithNoPractices_pct"></span>%</p>
+        <p class="ccg-stat__label">[FILLER: of cities report none of the five practices]</p>
+      </div>
+    </section>
+
+    <section class="ccg-section ccg-section--wide" aria-labelledby="ccg-map1-heading">
+      <h2 id="ccg-map1-heading">[FILLER: what this map shows]</h2>
+      <p>[FILLER: one short paragraph reading the map for the reader]</p>
+
+      <!--
+        The graphic — map, callouts, legend — is one aria-hidden block. Everything it
+        encodes is stated in words in the figcaption, which is the accessible alternative.
+        aria-label is a short name for the figure, so the figcaption is not also read as
+        its label.
+      -->
+      <figure class="ccg-figure" id="ccg-map1" aria-label="Map of every surveyed city">
+        <div class="ccg-figure__graphic" aria-hidden="true">
+          <div class="ccg-map">
+            <!--
+              viewBox is re-read from CCG_DATA.basemap at run time; the value here is
+              today's us-atlas box, so the box is right before the script runs.
+              The three paths and the two layers are drawn into by ccg-dashboard.js.
+            -->
+            <svg class="ccg-map__svg" viewBox="0 0 975 610" aria-hidden="true" focusable="false">
+              <path class="ccg-map__land"></path>
+              <path class="ccg-map__states"></path>
+              <path class="ccg-map__outline"></path>
+              <g class="ccg-map__cities"></g>
+              <g class="ccg-map__annotations"></g>
+            </svg>
+            <!-- The two callout labels are appended here, from MAP1_ANNOTATIONS. -->
+          </div>
+
+          <!--
+            Rendered as HTML beside the graphic, never inside the SVG, so it reflows and
+            stays at a readable font size at every width. The bucket labels, the bubble
+            sizes and the ramp colors are filled in from the data.
+          -->
+          <div class="ccg-legend">
+            <div class="ccg-legend__group ccg-legend__group--size">
+              <p class="ccg-legend__title">Bubble size: city population</p>
+              <ul class="ccg-legend__items">
+                <li class="ccg-legend__item" data-ccg-bucket="0"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="1"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="2"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="3"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="none"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">Not reported (drawn smallest)</span></li>
+              </ul>
+            </div>
+            <div class="ccg-legend__group ccg-legend__group--count">
+              <p class="ccg-legend__title">Bubble color: practices in place, none to all five</p>
+              <ul class="ccg-legend__items">
+                <li class="ccg-legend__item" data-ccg-count="0"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">0</span></li>
+                <li class="ccg-legend__item" data-ccg-count="1"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">1</span></li>
+                <li class="ccg-legend__item" data-ccg-count="2"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">2</span></li>
+                <li class="ccg-legend__item" data-ccg-count="3"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">3</span></li>
+                <li class="ccg-legend__item" data-ccg-count="4"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">4</span></li>
+                <li class="ccg-legend__item" data-ccg-count="5"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">5</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <figcaption class="ccg-figure__caption" id="ccg-map1-caption"></figcaption>
+      </figure>
+    </section>
+
+    <section class="ccg-section" aria-labelledby="ccg-practices-heading">
+      <h2 id="ccg-practices-heading">The five practices</h2>
+      <p>[FILLER: one sentence introducing the five practices]</p>
+      <!-- Names and definitions are authored in scripts/lib/meta.mjs and baked into CCG_DATA. -->
+      <dl class="ccg-practice-list" data-ccg-practice-definitions></dl>
+    </section>
+
+    <section class="ccg-section ccg-section--wide" aria-labelledby="ccg-map2-heading">
+      <h2 id="ccg-map2-heading">Explore the map</h2>
+      <p>[FILLER: one sentence telling the reader what the controls do]</p>
+
+      <!-- No submit button exists, but Enter in a form still submits and would reload
+           the host page; the script prevents that. Both option lists are filled from the
+           data, so the counts in the labels move with a data refresh. -->
+      <form class="ccg-controls" data-ccg-form="map">
+        <div class="ccg-field">
+          <label for="ccg-control-practice">Number of practices</label>
+          <select id="ccg-control-practice" name="ccg-control-practice" data-ccg-options="practiceCount"></select>
+        </div>
+        <div class="ccg-field">
+          <label for="ccg-control-population">City population</label>
+          <select id="ccg-control-population" name="ccg-control-population" data-ccg-options="population"></select>
+        </div>
+        <div class="ccg-controls__actions">
+          <button type="button" class="ccg-button" data-ccg-action="reset-map">Reset the map</button>
+        </div>
+      </form>
+
+      <figure class="ccg-figure" id="ccg-map2" aria-label="Map of the cities matching the controls above">
+        <div class="ccg-figure__graphic" aria-hidden="true">
+          <div class="ccg-map">
+            <svg class="ccg-map__svg" viewBox="0 0 975 610" aria-hidden="true" focusable="false">
+              <path class="ccg-map__land"></path>
+              <path class="ccg-map__states"></path>
+              <path class="ccg-map__outline"></path>
+              <g class="ccg-map__cities"></g>
+              <g class="ccg-map__annotations"></g>
+            </svg>
+          </div>
+
+          <div class="ccg-legend">
+            <div class="ccg-legend__group ccg-legend__group--size">
+              <p class="ccg-legend__title">Bubble size: city population</p>
+              <ul class="ccg-legend__items">
+                <li class="ccg-legend__item" data-ccg-bucket="0"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="1"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="2"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="3"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
+                <li class="ccg-legend__item" data-ccg-bucket="none"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">Not reported (drawn smallest)</span></li>
+              </ul>
+            </div>
+            <div class="ccg-legend__group ccg-legend__group--count">
+              <p class="ccg-legend__title">Bubble color: practices in place, none to all five</p>
+              <ul class="ccg-legend__items">
+                <li class="ccg-legend__item" data-ccg-count="0"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">0</span></li>
+                <li class="ccg-legend__item" data-ccg-count="1"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">1</span></li>
+                <li class="ccg-legend__item" data-ccg-count="2"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">2</span></li>
+                <li class="ccg-legend__item" data-ccg-count="3"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">3</span></li>
+                <li class="ccg-legend__item" data-ccg-count="4"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">4</span></li>
+                <li class="ccg-legend__item" data-ccg-count="5"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">5</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <!-- aria-live is added after the first paint, so nothing is announced on load. -->
+        <figcaption class="ccg-figure__caption" id="ccg-map2-caption"></figcaption>
+      </figure>
+    </section>
+
+    <!-- One search, filtering the map above it and the table below it (D9). The status
+         line is not decoration: Map 2 scrolls out of view on a phone, so the shared
+         result has to be readable from here. -->
+    <section class="ccg-section" aria-labelledby="ccg-search-heading">
+      <h2 id="ccg-search-heading">[FILLER: find your city]</h2>
+      <p>[FILLER: one sentence - searching narrows both the map and the table]</p>
+
+      <form class="ccg-controls ccg-controls--search" data-ccg-form="search">
+        <div class="ccg-field">
+          <label for="ccg-search-input">Search by city or state</label>
+          <input id="ccg-search-input" name="ccg-search-input" type="search" autocomplete="off">
+        </div>
+        <div class="ccg-controls__actions">
+          <button type="button" class="ccg-button" data-ccg-action="clear-search">Clear search</button>
+        </div>
+      </form>
+
+      <p class="ccg-search-status" id="ccg-search-status"></p>
+    </section>
+
+    <section class="ccg-section ccg-section--wide" aria-labelledby="ccg-table-heading">
+      <h2 id="ccg-table-heading" tabindex="-1">Every city in the survey</h2>
+      <p>[FILLER: one sentence naming search and sort, and how to find your city]</p>
+
+      <!-- Explains a purely visual encoding — every cell already carries the same facts
+           in words — so it is hidden from the accessibility tree rather than read twice. -->
+      <div class="ccg-table-legend" aria-hidden="true">
+        <p>In “Which practices”: ● reported, ○ not reported.</p>
+        <ul class="ccg-table-legend__items" data-ccg-practice-key></ul>
+      </div>
+
+      <!-- Focusable and labelled, so a keyboard user can scroll the table sideways on a
+           narrow screen without a pointer. -->
+      <div class="ccg-table-container" id="ccg-table-container" tabindex="0" role="region" aria-labelledby="ccg-table-heading">
+        <table class="ccg-table">
+          <caption class="ccg-table__caption">Surveyed cities and their child-centered governance practices — [FILLER: one line saying what a row is and where the numbers come from]</caption>
+          <thead>
+            <!-- APG sortable-table pattern: the button is inside the header cell,
+                 aria-sort lives on the cell, and the arrow is a second, non-color signal
+                 of the same state. ccg-dashboard.js owns aria-sort and the arrow glyph. -->
+            <tr>
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--city" data-ccg-sort="city" aria-sort="none">
+                <button type="button" class="ccg-table__sort"><span>City</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
+              </th>
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--state" data-ccg-sort="state" aria-sort="none">
+                <button type="button" class="ccg-table__sort"><span>State</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
+              </th>
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--populationSize" data-ccg-sort="populationSize" aria-sort="none">
+                <button type="button" class="ccg-table__sort"><span>Size</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
+              </th>
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--ccgCount" data-ccg-sort="ccgCount" aria-sort="none">
+                <button type="button" class="ccg-table__sort"><span>Practices</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
+              </th>
+              <!-- Five fixed-width slots holding the practice initials, so each glyph in
+                   a row sits under its own letter. Filled from the data. -->
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--marks">
+                <span class="ccg-marks" aria-hidden="true" data-ccg-practice-initials></span>
+                <span class="ccg-visually-hidden">Which practices</span>
+              </th>
+              <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--details">
+                <span class="ccg-visually-hidden">Details</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="ccg-not-found" hidden>
+        <p data-ccg-not-found="lede"></p>
+        <p>[FILLER: one sentence saying that not being listed here says nothing about what a city does for its children.]</p>
+        <div class="ccg-not-found__lookup" data-ccg-not-found="lookup"></div>
+      </div>
+
+      <div class="ccg-pagination" id="ccg-table-pagination">
+        <div class="ccg-field ccg-pagination__rows">
+          <label for="ccg-table-rows">Rows per page</label>
+          <select id="ccg-table-rows" name="ccg-table-rows">
+            <option value="30" selected>30</option>
+            <option value="100">100</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <!-- Previous/Next are disabled at the bounds rather than hidden, so the reader
+             can see that the control exists and where they are in the list. -->
+        <div class="ccg-pagination__pages">
+          <button type="button" class="ccg-button ccg-button--small" data-ccg-page="previous">Previous</button>
+          <p class="ccg-pagination__count"></p>
+          <button type="button" class="ccg-button ccg-button--small" data-ccg-page="next">Next</button>
+        </div>
+      </div>
+
+      <p class="ccg-visually-hidden" id="ccg-table-status"></p>
+    </section>
+
+    <section class="ccg-section" aria-labelledby="ccg-learn-heading">
+      <h2 id="ccg-learn-heading">[FILLER: learn and do more heading]</h2>
+      <p>[FILLER: one sentence on what a city can do next]</p>
+      <a class="ccg-cta" href="#">[FILLER: link text]</a>
+    </section>
+
+  </main>
+
+  <footer class="ccg-section" aria-labelledby="ccg-about-heading">
+    <h2 id="ccg-about-heading">About this data</h2>
+
+    <h3>[FILLER: what's in the data]</h3>
+    <p>[FILLER: who was surveyed, when, what was asked, who it is for]</p>
+
+    <h3>[FILLER: what this data doesn't tell you]</h3>
+    <p>[FILLER: not a ranking, not every city, self-reported, point in time]</p>
+    <p>[FILLER: absence of a practice is not evidence of absence]</p>
+
+    <h3>[FILLER: how this data will grow]</h3>
+    <p>[FILLER: future collection plans and how a city can get itself included]</p>
+  </footer>
+
+</div>
+
+<script src="ccg-data.js"></script>
+<script src="ccg-dashboard.js"></script>
+
+</body>
+</html>
