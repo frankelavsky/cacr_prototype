@@ -23113,6 +23113,13 @@ window.CCG_DATA = {
    "populationSize": {
     "no_response": "No response"
    },
+   "populationSizeShort": {
+    "10,001-50,000": ">10k-50k",
+    "50,001-200,000": ">50k-200k",
+    "<10,000": "<10k",
+    ">200,000": ">200k",
+    "no_response": "No response"
+   },
    "region": {
     "no_response": "No response"
    },
@@ -23135,6 +23142,12 @@ window.CCG_DATA = {
    "10,001-50,000",
    "50,001-200,000",
    ">200,000"
+  ],
+  "populationBucketsShort": [
+   "<10k",
+   ">10k-50k",
+   ">50k-200k",
+   ">200k"
   ],
   "practices": [
    {
@@ -23255,7 +23268,7 @@ window.CCG_DATA = {
    },
    {
     "id": "ccgCount",
-    "label": "Practices in place",
+    "label": "Practices reported",
     "short": "Practices",
     "type": "number"
    },
@@ -23410,6 +23423,8 @@ window.CCG_DATA = {
   "citiesOnMap": 382,
   "citiesWithAllPractices": 22,
   "citiesWithAllPractices_pct": 5.7,
+  "citiesWithAnyPractice": 306,
+  "citiesWithAnyPractice_pct": 79.7,
   "citiesWithNoPractices": 78,
   "citiesWithNoPractices_pct": 20.3,
   "citiesWithUnmandatedPractice": 143,
