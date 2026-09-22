@@ -678,13 +678,12 @@
   }
 
   // ==========================================================================
-  // CAPTION
+  // CAPTION AND SHARED TEXT HELPERS
   // ==========================================================================
 
-  // The captions are the accessible alternative to the two graphics, and they are
-  // visible to everyone — nothing here is screen-reader-only.
-
-  var CAPTION_DEBOUNCE_MS = 300;
+  // The caption is the accessible alternative to the graphic, and it is visible to
+  // everyone — nothing here is screen-reader-only. The sentences that report what a
+  // filter did live with the controls and the table instead (D24).
 
   // Short enough to feel live while typing, long enough that a whole word is one write
   // to the two status lines rather than one per keystroke.
@@ -703,194 +702,22 @@
   // Short names, lowercased for mid-sentence use: "cities reporting youth councils".
   // The caption generator takes its labels as an argument rather than reaching for
   // CCG_DATA, so `node --test` can drive it with no data loaded.
-  function practiceNames(keys, metaData) {
-    var practices = (metaData || {}).practices || [];
-    return keys.map(function (key) {
-      var found = practices.filter(function (practice) {
-        return practice.key === key;
-      })[0];
-      return found ? found.shortName.charAt(0).toLowerCase() + found.shortName.slice(1) : key;
-    });
-  }
+  // The caption is the map's text alternative, and it is deliberately static. It says
+  // what a bubble means and what the map leaves out — the two things only the graphic
+  // knows. What is currently *shown* is said twice already, by the status line under the
+  // controls and by the table's own status, and a third copy under the map meant three
+  // live regions announcing one filter change (2026-09-22).
+  function mapCaption(statsData, metaData) {
+    var missing = statsData.citiesNotOnMap || [];
+    var encoding = 'One bubble per surveyed city: its size is the city\u2019s population, ' +
+      'its colour is how many of the five practices the city reports \u2014 light for none, ' +
+      'dark for all five \u2014 and a circled bubble is a pinned city.';
 
-  // "Both" and "all of" carry the inclusive meaning of the checkboxes: every practice
-  // checked has to be reported, and a city reporting more besides still counts.
-  function practicePhrase(keys, metaData) {
-    var names = practiceNames(keys, metaData);
-    if (names.length === 0) return '';
-    if (names.length === 1) return 'cities reporting ' + names[0];
-    if (names.length === 2) return 'cities reporting both ' + names[0] + ' and ' + names[1];
-    return 'cities reporting all of ' + joinList(names);
-  }
+    if (missing.length === 0) return encoding;
 
-  function sizePhrase(sizeBucket, buckets) {
-    if (sizeBucket === 'all') return '';
-    var label = buckets[sizeBucket];
-    return label ? 'population ' + label : 'one population size';
-  }
-
-  function filterPhrase(filters, metaData) {
-    var parts = [];
-    var practices = practicePhrase(practiceKeys(filters), metaData);
-    var size = sizePhrase(filters.sizeBucket, (metaData || {}).populationBuckets || []);
-    var query = normalizeQuery(filters.query);
-
-    if (practices) parts.push(practices);
-    if (size) parts.push(size);
-    if (query) parts.push('matching “' + query + '”');
-    return parts.join(', ');
-  }
-
-  // Only sentence needed when the reader has not touched a control yet.
-  function distributionSentence(statsData) {
-    var byCount = statsData.byCcgCount || {};
-    var mode = Object.keys(byCount).reduce(function (best, key) {
-      return byCount[key] > byCount[best] ? key : best;
-    }, Object.keys(byCount)[0]);
-    var modeLabel = Number(mode) === 1 ? '1 practice' : mode + ' practices';
-
-    return 'The most common answer is ' + modeLabel + ' (' + byCount[mode] + ' cities); ' +
-      byCount[0] + ' report none of the five and ' + byCount[5] + ' report all five.';
-  }
-
-  // The whole distribution, never just the leader. Naming one winner meant breaking a tie
-  // alphabetically and stating the result as fact — at 3 practices the South and the West
-  // both hold 16 of 47, and the caption used to say the South.
-  function regionTally(cities) {
-    var counts = {};
-    cities.forEach(function (record) {
-      counts[record.region] = (counts[record.region] || 0) + 1;
-    });
-
-    // Count then name, so the same filtered set always reads the same way. "No response"
-    // is not a region: it sorts last however many cities are in it.
-    return Object.keys(counts)
-      .sort(function (a, b) {
-        if ((a === 'no_response') !== (b === 'no_response')) return a === 'no_response' ? 1 : -1;
-        return counts[b] - counts[a] || a.localeCompare(b);
-      })
-      .map(function (region) {
-        return { region: region, count: counts[region] };
-      });
-  }
-
-  function regionPhrase(entry) {
-    if (entry.region === 'no_response') return entry.count + ' with no region reported';
-    return entry.count + ' in the ' + entry.region;
-  }
-
-  // Every count is stated, so a tie shows as a tie and a 36% plurality cannot read as
-  // dominance the way "the most common region is the South" did. The lead-in is two words:
-  // spelling out "spread across four regions" cost a whole line at 360px and the list
-  // already says how many there are.
-  function spreadSentence(tally) {
-    return 'By region: ' + joinList(tally.map(regionPhrase)) + '.';
-  }
-
-  // One observation, chosen by a deliberately short rule table.
-  function observationSentence(filters, cities, statsData) {
-    if (cities.length === 1) return 'The only one is ' + cityLabel(cities[0]) + '.';
-    if (!hasActiveFilter(filters)) return distributionSentence(statsData);
-
-    var tally = regionTally(cities);
-    if (tally.length === 1) {
-      var all = cities.length === 2 ? 'Both' : 'All ' + cities.length;
-      if (tally[0].region === 'no_response') return 'None of the ' + cities.length + ' reported a region.';
-      return all + ' are in the ' + tally[0].region + '.';
-    }
-    return spreadSentence(tally);
-  }
-
-  // Matching records and plotted bubbles are not the same number, and the caption is the
-  // only place a screen-reader user learns the difference.
-  function unplottedSentence(cities) {
-    var missing = cities
-      .filter(function (record) {
-        return !hasCoordinates(record);
-      })
-      // Named in a fixed order, like the region tally: the same set has to read the same
-      // way however the array reached us.
-      .sort(function (a, b) {
-        return a.city.localeCompare(b.city) || a.state.localeCompare(b.state);
-      });
-    if (missing.length === 0) return '';
-
-    return missing.length + (missing.length === 1 ? ' of them is' : ' of them are') +
-      ' not on the map — ' + joinList(missing.map(cityLabel)) +
+    return encoding + ' ' + statsData.citiesOnMap + ' of the ' + statsData.totalCities +
+      ' are plotted: ' + joinList(missing) +
       (missing.length === 1 ? ' falls' : ' fall') + ' outside the projection this map uses.';
-  }
-
-  function showingSentence(filters, cities, statsData, metaData) {
-    var plotted = cities.filter(hasCoordinates).length;
-    if (!hasActiveFilter(filters)) return 'Showing all ' + statsData.totalCities + ' surveyed cities.';
-
-    return 'Showing ' + plotted + ' of ' + statsData.totalCities + ' surveyed cities: ' +
-      filterPhrase(filters, metaData) + '.';
-  }
-
-  // Pinned cities are drawn and circled whether or not they match, so the caption names
-  // them — it is the only place a screen-reader user learns a callout exists at all.
-  function pinSentence(pins) {
-    if (pins.length === 0) return '';
-
-    var described = pins.map(function (record) {
-      return cityLabel(record) + ' \u2014 ' + pinFact(record);
-    });
-    var lead = pins.length === 1 ? 'One city is pinned and circled: ' :
-      pins.length + ' cities are pinned and circled: ';
-    return lead + joinList(described, '; ') + '.';
-  }
-
-  // A pin outranks a filter. Saying so is the difference between a map that looks wrong
-  // and a map the reader understands.
-  function pinsOutsideSentence(filters, pins, cities) {
-    if (pins.length === 0 || !hasActiveFilter(filters)) return '';
-
-    var shown = cities.map(function (record) {
-      return record.id;
-    });
-    var outside = pins.filter(function (record) {
-      return shown.indexOf(record.id) === -1;
-    });
-    if (outside.length === 0) return '';
-
-    var names = joinList(outside.map(cityLabel));
-    if (outside.length === 1) {
-      return names + ' is pinned, so it stays on the map though it does not match these filters.';
-    }
-    return names + ' are pinned, so they stay on the map though they do not match these filters.';
-  }
-
-  // Pure. `metaData` is CCG_DATA.meta — it carries the practice names and the
-  // index-to-label population buckets that `stats` does not. `pins` is the pinned
-  // records, which are on the map in addition to `cities`.
-  function mapCaption(filters, cities, statsData, metaData, pins) {
-    var pinned = pins || [];
-
-    if (cities.length === 0) {
-      return [
-        'No surveyed cities match: ' + filterPhrase(filters, metaData) +
-          '. Try clearing a filter.',
-        pinSentence(pinned)
-      ].filter(Boolean).join(' ');
-    }
-
-    // The observation is computed over the plotted cities, not the matching records, so
-    // every number in the caption counts the same set the reader is looking at. With
-    // nothing plotted, the unplotted sentence has already named every match.
-    var plotted = cities.filter(hasCoordinates);
-    return [
-      showingSentence(filters, cities, statsData, metaData),
-      unplottedSentence(cities),
-      plotted.length === 0 ? '' : observationSentence(filters, plotted, statsData),
-      pinSentence(pinned),
-      pinsOutsideSentence(filters, pinned, cities)
-    ].filter(Boolean).join(' ');
-  }
-
-  // The one place the pure generator is handed the app's data.
-  function currentMapCaption(filters, cities, pins) {
-    return mapCaption(filters, cities, stats(), meta(), pins);
   }
 
   function debounce(fn, wait) {
@@ -1936,16 +1763,11 @@
   function setUpMap(root) {
     var records = dataset();
     var figure = find(root, '#ccg-map');
-    var filters = state.filters.get();
-    var caption = find(figure, 'figcaption');
 
     function draw(next) {
-      var shown = applyFilters(records, next);
-      var pins = pinnedRecords(records, next);
       return {
         cities: drawnCities(records, next),
-        callouts: pins,
-        caption: currentMapCaption(next, shown, pins),
+        callouts: pinnedRecords(records, next),
         render: {
           highlight: function (record) {
             return isPinned(next, record);
@@ -1954,21 +1776,19 @@
       };
     }
 
-    var first = draw(filters);
-    var svg = fillMapFigure(figure, first);
-    makeLive(caption);
+    // Written once. The caption explains the encoding, which never changes; what is
+    // currently shown is the status lines' job (2026-09-22). No aria-live here: this
+    // node has nothing to announce.
+    var svg = fillMapFigure(figure, Object.assign(draw(state.filters.get()), {
+      caption: mapCaption(stats(), meta())
+    }));
 
-    // One assignment, after the redraw: two writes would be announced twice. Debounced so
-    // arrowing through a select announces where the reader stopped, not every option passed.
-    var announce = debounce(function (text) {
-      caption.textContent = text;
-    }, CAPTION_DEBOUNCE_MS);
-
+    // Only the bubbles and the callouts are rewritten, so nothing the reader is focused
+    // on is replaced.
     state.filters.subscribe(function (next) {
       var view = draw(next);
       renderMap(svg, view.cities, view.render);
       renderCallouts(find(figure, '.ccg-map'), svg, view.callouts, view.cities);
-      announce(view.caption);
     });
   }
 
