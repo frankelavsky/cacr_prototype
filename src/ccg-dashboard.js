@@ -174,6 +174,99 @@
   }
 
   // ==========================================================================
+  // PLACES WITH NO DATA
+  // ==========================================================================
+
+  // `us-cities.json` is every incorporated place the Census lists that the survey does not
+  // cover — 31,743 of them. It is the absence of data rather than data, so these places
+  // never appear in the default table, never reach the map, and are never counted in a
+  // statistic. A search is the only thing that surfaces them, and every value they carry
+  // reads "Unreported": D5's third case, never asked, as against asked-and-blank.
+
+  // Three characters: "oh" would otherwise pull in several thousand places nobody was
+  // looking for, and bury the fifteen Ohio cities that did answer.
+  var NO_DATA_MIN_QUERY = 3;
+
+  // Enough to show a reader their city is in there; not so many that the rows which
+  // answer the question are buried under the rows that cannot.
+  var NO_DATA_LIMIT = 25;
+
+  function noDataLabel(part) {
+    var labels = (meta().labels || {}).noData || {};
+    return labels[part] || (part === 'flag' ? '(No Data)' : 'Unreported');
+  }
+
+  function isNoData(record) {
+    return Boolean(record && record.noData);
+  }
+
+  // The same shape a surveyed record has, so every stage downstream — sorting, paging,
+  // rendering — treats it as an ordinary row and only the places that must say
+  // "Unreported" have to know the difference.
+  function noDataRecord(city, stateCode, stateNames) {
+    return {
+      id: 'no-data--' + fold(city).replace(/[^a-z0-9]+/g, '-') + '--' + fold(stateCode),
+      city: city,
+      state: stateCode,
+      stateName: (stateNames || {})[stateCode] || stateCode,
+      region: null,
+      populationSize: null,
+      populationIndex: -1,
+      ccgCount: null,
+      practices: {},
+      x: null,
+      y: null,
+      noData: true
+    };
+  }
+
+  // Only a search reaches them, and only a search on its own: a practice or a size filter
+  // asks a question about reported data, which these places by definition cannot answer.
+  // Returns the capped rows and the full count, because the reader is owed both.
+  function noDataMatches(places, filters, stateNames) {
+    var query = normalizeQuery(filters && filters.query);
+    var none = { shown: [], total: 0 };
+
+    if (!places || query.length < NO_DATA_MIN_QUERY) return none;
+    if (practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all') return none;
+
+    var names = stateNames || {};
+    var shown = [];
+    var total = 0;
+
+    Object.keys(places).forEach(function (code) {
+      var haystackState = ' ' + code + ' ' + (names[code] || code);
+      places[code].forEach(function (city) {
+        if (fold(city + haystackState).indexOf(query) === -1) return;
+        total += 1;
+        if (shown.length < NO_DATA_LIMIT) shown.push(noDataRecord(city, code, names));
+      });
+    });
+    return { shown: shown, total: total };
+  }
+
+  // One scan per settled filter change, not one per subscriber: the status line and the
+  // table both need this answer, and 31,743 names is not free.
+  var noDataCache = { key: null, value: { shown: [], total: 0 } };
+
+  function currentNoData(filters) {
+    var key = [
+      normalizeQuery(filters.query),
+      practiceKeys(filters).join(','),
+      filters.sizeBucket,
+      state.places ? 'loaded' : 'pending'
+    ].join('|');
+
+    if (noDataCache.key !== key) {
+      noDataCache = {
+        key: key,
+        value: noDataMatches(state.places, filters, meta().stateNames)
+      };
+    }
+    return noDataCache.value;
+  }
+
+  // ==========================================================================
   // MAP RENDER
   // ==========================================================================
 
@@ -853,7 +946,12 @@
       key: function (record) { return record.populationIndex; },
       unranked: function (record) { return record.populationIndex < 0; }
     },
-    ccgCount: { label: 'Practices', key: function (record) { return record.ccgCount; } }
+    ccgCount: {
+      label: 'Practices',
+      key: function (record) { return record.ccgCount; },
+      // A place with no data has no count to rank, the way "No response" has no size.
+      unranked: function (record) { return record.ccgCount === null; }
+    }
   };
 
   var FILLED_MARK = '●';
@@ -925,9 +1023,19 @@
     var rest = filterRecords(records, filters).filter(function (record) {
       return !isPinned(filters, record);
     });
+    var places = tableState.places || { shown: [], total: 0 };
 
-    var view = paginate(sortRecords(rest, tableState.sort), tableState.page, tableState.perPage);
+    // Surveyed cities first, then the places with no data — sorted within each group, not
+    // across them. One merged list would scatter the rows that answer the reader's
+    // question among the rows that cannot.
+    var ordered = sortRecords(rest, tableState.sort)
+      .concat(sortRecords(places.shown, tableState.sort));
+
+    var view = paginate(ordered, tableState.page, tableState.perPage);
     view.pinned = pinned;
+    view.surveyed = rest.length;
+    view.noData = places.shown.length;
+    view.noDataTotal = places.total;
     return view;
   }
 
@@ -1003,6 +1111,16 @@
     var cell = element('td');
     cell.className = 'ccg-table__marks';
 
+    // Five empty circles would say "reported none of the five", which is a claim. A place
+    // nobody surveyed has made no claim at all, so it gets dashes and says so in words.
+    if (isNoData(record)) {
+      cell.appendChild(markRow(practiceList().map(function () {
+        return { text: '\u2013', reported: false };
+      })));
+      cell.appendChild(hiddenLabel(noDataLabel('value')));
+      return cell;
+    }
+
     cell.appendChild(markRow(practiceList().map(function (practice) {
       var reported = isReported(record, practice.key);
       return { text: reported ? FILLED_MARK : EMPTY_MARK, reported: reported };
@@ -1066,19 +1184,39 @@
     // Position and a background colour are not available to a screen reader, and the row
     // is out of alphabetical order for a reason the reader deserves to hear.
     if (settings.pinned) city.appendChild(hiddenLabel(' (pinned)'));
+    if (isNoData(record)) {
+      var flag = element('span', ' ' + noDataLabel('flag'));
+      flag.className = 'ccg-table__flag';
+      city.appendChild(flag);
+    }
     row.appendChild(city);
 
     row.appendChild(textCell(record.state));
-    row.appendChild(populationCell(shortPopulation(record)));
-    row.appendChild(textCell(String(record.ccgCount)));
+    row.appendChild(populationCell(isNoData(record) ? noDataLabel('value') : shortPopulation(record)));
+    row.appendChild(isNoData(record) ? unreportedCell() : textCell(String(record.ccgCount)));
     row.appendChild(practiceMarksCell(record));
 
     var actions = element('td');
     actions.className = 'ccg-table__actions';
-    actions.appendChild(pinButton(record, Boolean(settings.pinned), Boolean(settings.atLimit)));
+    // Nothing to pin: a place with no data has nothing to compare and no bubble on the
+    // map to circle.
+    if (!isNoData(record)) {
+      actions.appendChild(pinButton(record, Boolean(settings.pinned), Boolean(settings.atLimit)));
+    }
     actions.appendChild(detailsButton(record));
     row.appendChild(actions);
     return row;
+  }
+
+  // An em dash carries nothing to a screen reader, so the word rides along hidden.
+  function unreportedCell() {
+    var cell = element('td');
+    var mark = element('span', '\u2014');
+    mark.className = 'ccg-table__unreported';
+    mark.setAttribute('aria-hidden', 'true');
+    cell.appendChild(mark);
+    cell.appendChild(hiddenLabel(noDataLabel('value')));
+    return cell;
   }
 
   // ------------------------------- city profile -----------------------------
@@ -1103,6 +1241,17 @@
 
     var fields = element('dl');
     fields.className = 'ccg-profile__fields';
+
+    // Every field, still named, so the profile of a place with no data has the same shape
+    // as the profile of a city that answered — and the difference is stated, not implied
+    // by an empty space.
+    if (isNoData(record)) {
+      field(fields, 'Status', noDataLabel('value'));
+      field(fields, 'Mandate', noDataLabel('value'));
+      block.appendChild(fields);
+      return block;
+    }
+
     field(fields, 'Status', label('status', reported.status));
     field(fields, 'Mandate', label('mandate', reported.mandate));
     Object.keys(reported.details || {}).forEach(function (key) {
@@ -1113,16 +1262,55 @@
     return block;
   }
 
+  // The one action for a place nobody has reported for. Its own sentence, because "help
+  // us report" is a different ask from "tell us we got your city wrong".
+  function noDataCall(record) {
+    var note = element(
+      'p',
+      '[FILLER: this city has no data reported. Would you like to get involved and help report?] '
+    );
+    note.className = 'ccg-profile__cta';
+
+    var link = element('a', '[FILLER: link placeholder]');
+    link.className = 'ccg-cta';
+    link.href = '#';
+    link.appendChild(hiddenLabel(' for ' + cityLabel(record)));
+
+    note.appendChild(link);
+    return note;
+  }
+
+  // First thing under the city's name: the one action a reader can take about this city.
+  // The link is a get-involved page elsewhere on UNICEF USA's site (O3) — this page has no
+  // backend and hosts no form. Every row builds one, so the city name rides along hidden:
+  // thirty links all reading "[FILLER: link text]" would be thirty identical links.
+  function profileCall(record) {
+    var note = element('p', '[FILLER: Want to get involved? See changes you would like to make?] ');
+    note.className = 'ccg-profile__cta';
+
+    var link = element('a', '[FILLER: link text]');
+    link.className = 'ccg-cta';
+    link.href = '#';
+    link.appendChild(hiddenLabel(' for ' + cityLabel(record)));
+
+    note.appendChild(link);
+    return note;
+  }
+
   function cityProfile(record) {
+    var missing = isNoData(record);
     var profile = element('div');
-    profile.className = 'ccg-profile';
-    profile.appendChild(element('h3', cityLabel(record)));
+    profile.className = 'ccg-profile' + (missing ? ' ccg-profile--no-data' : '');
+    profile.appendChild(element('h3', cityLabel(record) + (missing ? ' ' + noDataLabel('flag') : '')));
+    profile.appendChild(missing ? noDataCall(record) : profileCall(record));
 
     var facts = element('dl');
     facts.className = 'ccg-profile__fields';
-    field(facts, 'Region', label('region', record.region));
-    field(facts, 'Population size', label('populationSize', record.populationSize));
-    field(facts, 'Practices reported', String(record.ccgCount));
+    field(facts, 'Region', missing ? noDataLabel('value') : label('region', record.region));
+    field(facts, 'Population size',
+      missing ? noDataLabel('value') : label('populationSize', record.populationSize));
+    field(facts, 'Practices reported',
+      missing ? noDataLabel('value') : String(record.ccgCount));
     profile.appendChild(facts);
 
     practiceList().forEach(function (practice) {
@@ -1167,14 +1355,17 @@
       var row = tableRow(record, { pinned: entry.pinned, atLimit: settings.atLimit });
       var profile = profileRow(record, columnCount);
       var details = find(row, '[aria-controls]');
-      var pin = find(row, '[data-ccg-pin]');
+      // A place with no data has no Pin button; every surveyed row does.
+      var pin = row.querySelector('[data-ccg-pin]');
 
       details.addEventListener('click', function () {
         toggleProfile(details, profile, record);
       });
-      pin.addEventListener('click', function () {
-        settings.onPin(record);
-      });
+      if (pin) {
+        pin.addEventListener('click', function () {
+          settings.onPin(record);
+        });
+      }
 
       body.appendChild(row);
       body.appendChild(profile);
@@ -1253,7 +1444,16 @@
 
   function matchSentence(query, total) {
     if (!query) return '';
+    if (total === 0) return 'No surveyed city matches “' + query + '”.';
     return (total === 1 ? '1 city matches ' : total + ' cities match ') + '“' + query + '”.';
+  }
+
+  // Counted apart from the cities: they are rows, but they are not matches for a question
+  // about reported practices.
+  function noDataRowsSentence(view) {
+    if (!view.noData) return '';
+    if (view.noData === 1) return '1 place with no data reported is listed below.';
+    return view.noData + ' places with no data reported are listed below.';
   }
 
   function sortSentence(sort) {
@@ -1269,15 +1469,30 @@
     return pinned.length + ' pinned cities are above them.';
   }
 
+  // Counts, not records, so the sentence can be tested without building 25 rows.
+  function noDataSentence(places) {
+    if (!places || !places.total) return '';
+
+    var lead = places.total === 1 ?
+      '1 place in the United States has no data reported' :
+      places.total + ' places in the United States have no data reported';
+
+    if (places.total > places.shown) return lead + '; the first ' + places.shown + ' are in the table.';
+    return lead + (places.shown === 1 ? ', and it is' : ', and they are') + ' in the table.';
+  }
+
   function tableStatusText(view, tableState) {
     var query = normalizeQuery(tableState.filters.query);
     var paged = view.from !== 1 || view.to !== view.total;
 
     return [
-      matchSentence(query, view.total),
+      // The surveyed count, not the row count: a place with no data is a row, but it is
+      // not a city that matched.
+      matchSentence(query, view.surveyed),
       // "15 cities match" already says how many there are; the range only earns its
       // place when the reader is on one page of several.
       query && !paged ? '' : rangeSentence(view),
+      noDataRowsSentence(view),
       pinnedRowsSentence(view.pinned),
       sortSentence(tableState.sort)
     ].filter(Boolean).join(' ');
@@ -1287,9 +1502,10 @@
   // on a phone, so this is the only place a reader learns it changed (D9). It names the
   // count, not the filters — the controls are directly above it, and the map caption
   // already describes the set in full.
-  function resultStatusText(filters, matches, totalCities) {
+  function resultStatusText(filters, matches, totalCities, places) {
     var query = normalizeQuery(filters.query);
     var others = practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all';
+    var without = noDataSentence(places);
 
     if (!hasActiveFilter(filters)) {
       return 'Showing all ' + cityCount(totalCities) +
@@ -1305,9 +1521,14 @@
       return subject + verb + what;
     }
 
-    if (matches === 0) return sentence('No surveyed city', false) + '.';
-    return sentence(matches === 1 ? '1 city' : matches + ' cities', matches !== 1) +
-      ' — shown on the map above and in the table below.';
+    if (matches === 0) {
+      return [sentence('No surveyed city', false) + '.', without].filter(Boolean).join(' ');
+    }
+    return [
+      sentence(matches === 1 ? '1 city' : matches + ' cities', matches !== 1) +
+        ' — shown on the map above and in the table below.',
+      without
+    ].filter(Boolean).join(' ');
   }
 
   // The visible line above the table: what pinning did, and why a Pin button is disabled.
@@ -1682,7 +1903,13 @@
     });
 
     function showStatus(filters) {
-      status.textContent = resultStatusText(filters, applyFilters(records, filters).length, stats().totalCities);
+      var places = currentNoData(filters);
+      status.textContent = resultStatusText(
+        filters,
+        applyFilters(records, filters).length,
+        stats().totalCities,
+        { shown: places.shown.length, total: places.total }
+      );
       // Driven from the store, not from the change event, so clearing the filters moves
       // the summary too.
       practiceState.textContent = practiceSummaryText(practiceKeys(filters), meta().practices);
@@ -1845,7 +2072,36 @@
       if (button && !button.disabled) button.focus();
     }
 
+    // 376KB is not worth downloading for a reader who never searches, so the list arrives
+    // on the first search that could show it and the table re-renders when it lands.
+    function ensurePlaces(filters) {
+      if (state.places || state.placesRequested) return;
+      if (normalizeQuery(filters.query).length < NO_DATA_MIN_QUERY) return;
+      if (practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all') return;
+
+      // A flag, not an empty placeholder in `state.places`: the scan's cache key turns on
+      // whether the list is loaded, and an empty object reads as loaded — which would
+      // freeze the empty answer in place even after the real list arrived.
+      state.placesRequested = true;
+      loadCityLookup().then(function (cities) {
+        if (!cities) return;
+        state.places = cities;
+        // Republished rather than re-rendered here: the status line under the controls
+        // has to report the new rows too, and it is a different subscriber.
+        state.filters.set({});
+      });
+    }
+
+    // Bumped on every render, so a promise that resolves after the table has moved on can
+    // tell that it has: the lookup and the place list share one request, and whichever
+    // callback lands second used to overwrite the first one's work.
+    var renderToken = 0;
+
     function update() {
+      renderToken += 1;
+      ensurePlaces(tableState.filters);
+      tableState.places = currentNoData(tableState.filters);
+
       var view = tableView(records, tableState);
       // The page can be clamped by the pipeline; the buttons must reflect where we landed.
       tableState.page = view.page;
@@ -1866,6 +2122,7 @@
 
       // With no rows at all — nothing matching and nothing pinned — the table, its key
       // and its pager go away together: a legend for a table that is not there is noise.
+      // A place with no data is still a row, so a search that finds one is not a miss.
       var empty = view.total === 0;
       var blank = empty && view.pinned.length === 0;
 
@@ -1902,8 +2159,10 @@
     // The national list is fetched only here, on a miss. The status line is written once
     // the lookup has settled, so it announces one complete outcome rather than two.
     function showNotFound(query) {
+      var token = renderToken;
       renderNotFound(notFound, query, null, false);
       loadCityLookup().then(function (cities) {
+        if (token !== renderToken) return;
         if (normalizeQuery(state.filters.get().query) !== query) return;
         var places = findPlaces(cities, query, meta().stateNames);
         renderNotFound(notFound, query, places, true);
@@ -1942,6 +2201,9 @@
     }
 
     state.data = getData();
+    // The places with no survey data, once a search has asked for them (never on load).
+    state.places = null;
+    state.placesRequested = false;
     // Every filter and the pin list are shared; the page starts with the two cities Map 1
     // used to call out already pinned, and drops any that a data refresh removed.
     state.filters = createStore(Object.assign({}, DEFAULT_FILTERS, {
@@ -1980,6 +2242,10 @@
       isReported: isReported,
       mapCaption: mapCaption,
       nextDirection: nextDirection,
+      noDataMatches: noDataMatches,
+      noDataRecord: noDataRecord,
+      noDataSentence: noDataSentence,
+      noDataRowsSentence: noDataRowsSentence,
       notFoundStatusText: notFoundStatusText,
       pageCount: pageCount,
       paginate: paginate,

@@ -23110,6 +23110,10 @@ window.CCG_DATA = {
     "not_mandated": "Not mandated",
     "unsure": "Unsure"
    },
+   "noData": {
+    "flag": "(No Data)",
+    "value": "Unreported"
+   },
    "populationSize": {
     "no_response": "No response"
    },

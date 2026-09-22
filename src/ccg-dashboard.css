@@ -772,6 +772,18 @@
   font-weight: 700;
 }
 
+/* A row for a place nobody reported on: quieter than the data, and flagged in words
+   rather than by being greyed out — colour alone says nothing. */
+#ccg-dashboard .ccg-table__flag {
+  color: var(--ccg-text-muted);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+#ccg-dashboard .ccg-table__unreported {
+  color: var(--ccg-text-muted);
+}
+
 #ccg-dashboard .ccg-table__actions {
   padding-inline-end: 0;
   white-space: nowrap;
@@ -953,6 +965,12 @@
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.3;
+}
+
+/* Sits between the city's name and its facts, so the action is read before the data
+   rather than after four practice blocks. */
+#ccg-dashboard .ccg-profile__cta {
+  margin-block: 0.25rem 0.75rem;
 }
 
 #ccg-dashboard .ccg-profile__fields {
