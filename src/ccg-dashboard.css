@@ -920,6 +920,7 @@
      where a hyphen may fall — nothing is clipped and no word is cut mid-syllable. */
   #ccg-dashboard .ccg-table tbody th {
     hyphens: auto;
+    padding-left: 0.5rem;
   }
 
   /* The button carries its own border, so the row needs a little air before the
@@ -934,8 +935,11 @@
   }
 
   #ccg-dashboard .ccg-button--small {
-    padding: 0.1875rem;
+    padding: 0.1875rem 0.1rem;
+    min-width: 3.5rem;
     font-size: 0.75rem;
+    margin: 0.1rem 0rem 0.1rem 0.5rem;
+    display: block;
   }
 
   /* The sort arrow sits in the header cell's width budget. It shrinks with the cell,
