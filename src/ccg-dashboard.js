@@ -1097,13 +1097,13 @@
   function noDataCall(record) {
     var note = element(
       'p',
-      '[FILLER: this city has no data reported. Would you like to get involved and help report?] '
+      'This city has no data reported. Would you like to get involved and help report? Email us at '
     );
     note.className = 'ccg-profile__cta';
 
-    var link = element('a', '[FILLER: link placeholder]');
+    var link = element('a', 'research@unicefusa.org.');
     link.className = 'ccg-cta';
-    link.href = '#';
+    link.href = 'mailto:research@unicefusa.org';
     link.appendChild(hiddenLabel(' for ' + cityLabel(record)));
 
     note.appendChild(link);
