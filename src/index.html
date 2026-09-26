@@ -72,29 +72,13 @@
       <p>See how communities around the country are implementing Child-Centered Governance strategies. Searching your city/state or filtering by size or number of practices will all narrow both the map and the table below.</p>
 
       <!--
-        The graphic — map, callouts, legend — is one aria-hidden block. Everything it
+        The graphic — legend, map, callouts — is one aria-hidden block. Everything it
         encodes is stated in words in the figcaption, which is the accessible alternative.
         aria-label is a short name for the figure, so the figcaption is not also read as
         its label.
       -->
       <figure class="ccg-figure" id="ccg-map" aria-label="Map of the surveyed cities">
         <div class="ccg-figure__graphic" aria-hidden="true">
-          <div class="ccg-map">
-            <!--
-              viewBox is re-read from CCG_DATA.basemap at run time; the value here is
-              today's us-atlas box, so the box is right before the script runs.
-              The three paths and the two layers are drawn into by ccg-dashboard.js.
-              Pin callout labels are appended after the svg, positioned over it.
-            -->
-            <svg class="ccg-map__svg" viewBox="0 0 975 610" aria-hidden="true" focusable="false">
-              <path class="ccg-map__land"></path>
-              <path class="ccg-map__states"></path>
-              <path class="ccg-map__outline"></path>
-              <g class="ccg-map__cities"></g>
-              <g class="ccg-map__annotations"></g>
-            </svg>
-          </div>
-
           <div class="ccg-legend">
             <div class="ccg-legend__group ccg-legend__group--size">
               <p class="ccg-legend__title">Bubble size: city population</p>
@@ -120,6 +104,22 @@
                 <li class="ccg-legend__item" data-ccg-count="5"><span class="ccg-legend__dot"></span><span class="ccg-legend__label">5</span></li>
               </ul>
             </div>
+          </div>
+
+          <div class="ccg-map">
+            <!--
+              viewBox is re-read from CCG_DATA.basemap at run time; the value here is
+              today's us-atlas box, so the box is right before the script runs.
+              The three paths and the two layers are drawn into by ccg-dashboard.js.
+              Pin callout labels are appended after the svg, positioned over it.
+            -->
+            <svg class="ccg-map__svg" viewBox="0 0 975 610" aria-hidden="true" focusable="false">
+              <path class="ccg-map__land"></path>
+              <path class="ccg-map__states"></path>
+              <path class="ccg-map__outline"></path>
+              <g class="ccg-map__cities"></g>
+              <g class="ccg-map__annotations"></g>
+            </svg>
           </div>
         </div>
         <!-- Static: it says what a bubble means and which cities the projection leaves
