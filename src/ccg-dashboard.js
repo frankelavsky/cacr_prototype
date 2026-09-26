@@ -709,9 +709,12 @@
   // live regions announcing one filter change (2026-09-22).
   function mapCaption(statsData, metaData) {
     var missing = statsData.citiesNotOnMap || [];
-    var encoding = 'One bubble per surveyed city: its size is the city\u2019s population, ' +
+    var encoding = '';
+    /* old:
+      One bubble per surveyed city: its size is the city\u2019s population, ' +
       'its colour is how many of the five practices the city reports \u2014 light for none, ' +
-      'dark for all five \u2014 and a circled bubble is a pinned city.';
+      'dark for all five \u2014 and a circled bubble is a pinned city.
+    */
 
     if (missing.length === 0) return encoding;
 
@@ -1544,7 +1547,23 @@
     clear(list);
     practiceList().forEach(function (practice) {
       list.appendChild(element('dt', practice.name));
-      list.appendChild(element('dd', practice.definition));
+
+      // The brief link rides inside the same <dd> as the definition it belongs to, one
+      // space after the sentence. Every brief's link text is the same "Learn more >>",
+      // so the practice's short name goes in the accessible name: five links all reading
+      // "Learn more" would be five links a reader cannot tell apart out of context.
+      var definition = element('dd', practice.definition);
+      if (practice.linkTo && practice.linkToText) {
+        var link = element('a', practice.linkToText);
+        link.className = 'ccg-cta';
+        link.href = practice.linkTo;
+        if (practice.shortName) {
+          link.setAttribute('aria-label', 'Learn more about ' + practice.shortName);
+        }
+        definition.appendChild(document.createTextNode(' '));
+        definition.appendChild(link);
+      }
+      list.appendChild(definition);
     });
   }
 
