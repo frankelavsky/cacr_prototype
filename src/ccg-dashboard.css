@@ -888,9 +888,21 @@
   color: var(--ccg-text);
 }
 
+/* Details and Pin stop fitting side by side in the actions column well before the table
+   itself gets tight, so they stack here rather than at the narrow breakpoint below. The
+   block margin is what separates the stacked pair — the base rule's vertical margin is
+   0, which is right for a row and touching for a stack. 559 is the underside of the
+   560px boundary the profile fields already use, so this adds no new breakpoint. */
+@media (max-width: 559px) {
+  #ccg-dashboard .ccg-button--small {
+    display: block;
+    margin-block: 0.1rem;
+  }
+}
+
 /* Narrow viewports: the same six cells, tightened until they fit inside 360px. Nothing
    is clipped or truncated — the text gets smaller, the padding tighter, and long city
-   names hyphenate. */
+   names hyphenate. Ordered after the block above so these tighter values win at 479. */
 @media (max-width: 479px) {
   /* Half-bleed: the table reclaims the section's side padding, which is 32px of the
      ~312px it would otherwise have. Prose around it keeps its inset. */
@@ -939,18 +951,30 @@
     min-width: 3.5rem;
     font-size: 0.75rem;
     margin: 0.1rem 0rem 0.1rem 0.5rem;
-    display: block;
   }
 
-  /* The sort arrow sits in the header cell's width budget. It shrinks with the cell,
-     and drops below the label rather than widening the column past what fits. */
+  /* The sort arrow shrinks with the cell but stays on the label's line: the arrow is
+     what says which way the column is sorted, so it has to read as part of the label
+     rather than as a mark floating under it. These columns are width: 1%, so the
+     column takes its width from the button's min-content — label, gap, and arrow
+     together — and never wraps. */
   #ccg-dashboard .ccg-table__sort {
-    flex-wrap: wrap;
-    gap: 0 0.125rem;
+    gap: 0.125rem;
   }
 
   #ccg-dashboard .ccg-table__sort-arrow {
     font-size: 0.625em;
+  }
+}
+
+/* The last of the width: the actions column gives up the buttons' own margins, including
+   the 0.5rem indent above, and they narrow to the width of "Details" itself. Scoped to
+   the table so the pagination buttons, which take their spacing from a flex gap rather
+   than from these margins, are left alone. */
+@media (max-width: 350px) {
+  #ccg-dashboard .ccg-table .ccg-button--small {
+    min-width: 3.25rem;
+    margin: 0;
   }
 }
 
