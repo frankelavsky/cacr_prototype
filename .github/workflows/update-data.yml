@@ -1,0 +1,44 @@
+name: Update data
+
+on:
+  pull_request:
+    paths:
+      - 'data/source/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Rebuild data
+        run: |
+          set -o pipefail
+          npm run data 2>&1 | tee data-update.log
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo '## Data update'
+            echo '```'
+            cat data-update.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit regenerated files
+        run: |
+          git add src/ccg-data.js src/us-cities.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Regenerate data from data/source'
+          git push

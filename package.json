@@ -2,10 +2,9 @@
   "name": "ccg-dashboard",
   "private": true,
   "type": "module",
-  "description": "NLC Child-Centered Governance dashboard. package.json exists only for the dev-time prep script and tests — there is deliberately no build step.",
+  "description": "NLC Child-Centered Governance dashboard. src/ is the whole site and needs no build step; package.json only runs the data update.",
   "scripts": {
-    "data": "node scripts/build-data.mjs",
-    "test": "node --test \"scripts/**/*.test.mjs\""
+    "data": "node scripts/build-data.mjs"
   },
   "devDependencies": {
     "d3-geo": "^3.1.1",

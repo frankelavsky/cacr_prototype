@@ -6,12 +6,9 @@
   --ccg-bg: #ffffff;
   --ccg-rule: #d6d6d6;
   --ccg-focus: #0b4778;
-  /* Pale enough that the body text on it still clears 4.5:1. */
+  /* Body text on this must still clear 4.5:1. */
   --ccg-pinned-bg: #e9f4fd;
-  /* A row under the pointer, and the panel's own ground. Distinct from the pinned tint,
-     which means something else. */
   --ccg-surface-alt: #f2f5f8;
-  /* The select, the search input and the practice filter are one shape. */
   --ccg-control-height: 2.75rem;
   --ccg-measure: 42rem;
   --ccg-space: 1rem;
@@ -62,7 +59,6 @@
   color: inherit;
 }
 
-/* Heading sizes are fluid so long words never force horizontal scroll at 360px. */
 #ccg-dashboard h1,
 #ccg-dashboard h2,
 #ccg-dashboard h3 {
@@ -105,7 +101,7 @@
 }
 
 /* ==========================================================================
-   PAGE SKELETON (Task 04)
+   PAGE SKELETON
    ========================================================================== */
 
 #ccg-dashboard {
@@ -114,8 +110,6 @@
   --ccg-placeholder-bg: #f4f4f4;
 }
 
-/* Sections hold the readable measure; the map and table sections are allowed
-   to outgrow it on wider viewports (see the desktop framing in the wireframe). */
 #ccg-dashboard .ccg-section {
   max-width: var(--ccg-measure);
   margin-inline: auto;
@@ -150,27 +144,9 @@
 }
 
 /* ==========================================================================
-   MAP ACCESSIBILITY (Task 07)
+   MAP ACCESSIBILITY
    ========================================================================== */
 
-/* Map 2's caption is rewritten on every control change and its length varies by a line
-   or two. Reserving the common height keeps the page below the map still while the
-   reader is using the controls. Sized to the median caption, not the longest one — the
-   longest reserves a block of dead space under every short caption, and the controls the
-   reader is operating sit above this, so they never move either way. Measured across all
-   35 select pairs: median 5 lines at 360px (longest 7), 3 lines from 640px up
-   (longest 4). */
-#ccg-dashboard #ccg-map2-caption {
-  min-height: 7.5em;
-}
-
-@media (min-width: 640px) {
-  #ccg-dashboard #ccg-map2-caption {
-    min-height: 4.5em;
-  }
-}
-
-/* Off-screen until focused, then pinned to the top of the embed. */
 #ccg-dashboard .ccg-skip-link {
   position: absolute;
   left: -9999px;
@@ -204,16 +180,12 @@
   max-width: 30ch;
 }
 
-/* The second number in a stat block: present, but never competing with the headline
-   it qualifies. */
 #ccg-dashboard .ccg-stat__note {
   margin-block-start: 0.5rem;
   color: var(--ccg-text-muted);
   max-width: 34ch;
 }
 
-/* A stat whose number has not been supplied yet. The placeholder sits in the number's
-   slot at reading size, so an unfilled slot can never be mistaken for a value. */
 #ccg-dashboard .ccg-stat--pending .ccg-stat__number {
   font-size: 1.0625rem;
   font-weight: 600;
@@ -237,14 +209,11 @@
   gap: var(--ccg-space);
 }
 
-/* A select is as wide as its longest option; without this, the grid item's
-   auto minimum pushes the page past 360px. */
+/* Without this, the grid item's auto minimum pushes the page past 360px. */
 #ccg-dashboard .ccg-field {
   min-width: 0;
 }
 
-/* The practice filter is a fieldset because it is one question with five answers.
-   It spans both control columns: five practice names do not fit in half a row. */
 #ccg-dashboard .ccg-fieldset {
   min-width: 0;
   margin: 0;
@@ -252,8 +221,6 @@
   border: 0;
 }
 
-/* Closed, this is the select's twin: same height, same border, the current value on the
-   left and a caret on the right. */
 #ccg-dashboard .ccg-dropdown {
   position: relative;
   min-width: 0;
@@ -274,14 +241,13 @@
   display: none;
 }
 
-/* Reads as the control's value, the way the selected option does in the select. */
 #ccg-dashboard .ccg-dropdown__value {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Drawn rather than written, so no screen reader ever reads the caret as text. */
+/* Drawn rather than written, so no screen reader reads the caret as text. */
 #ccg-dashboard .ccg-dropdown__summary::after {
   content: "";
   flex: none;
@@ -296,10 +262,6 @@
   border-block-end: 0.35rem solid var(--ccg-text);
 }
 
-/* Open, it is a list of rows, over the page rather than pushing it, so the table below
-   does not jump when the filter opens. Anchored to the control's trailing edge: at wide
-   widths this control sits in the second column, and a panel opening the other way runs
-   off the page. */
 #ccg-dashboard .ccg-dropdown__panel {
   position: absolute;
   z-index: 10;
@@ -321,7 +283,6 @@
   font-weight: 600;
 }
 
-/* The panel's own header: what the filter means, before the rows it applies to. */
 #ccg-dashboard .ccg-fieldset__note {
   margin: 0;
   padding: 0.5rem 0.75rem;
@@ -331,13 +292,10 @@
   font-size: 0.875rem;
 }
 
-/* One column, always: two columns of practice names wrapped badly at every width, and a
-   list is what a reader expects behind a control like this. */
 #ccg-dashboard .ccg-checkboxes {
   display: block;
 }
 
-/* The whole row is the <label>, so the whole row is the hit target. */
 #ccg-dashboard .ccg-checkbox {
   display: flex;
   align-items: center;
@@ -368,7 +326,6 @@
   flex: 1 1 auto;
 }
 
-/* The count is secondary: right-aligned, quieter, and never the reason a row wraps. */
 #ccg-dashboard .ccg-checkbox__count {
   flex: none;
   color: var(--ccg-text-muted);
@@ -376,8 +333,7 @@
   white-space: nowrap;
 }
 
-/* Direct children only: the practice filter's panel is inside a .ccg-field too, and its
-   rows are labels and its boxes are inputs. A control's own styling must not reach them. */
+/* Direct children only: the practice panel inside .ccg-field also holds labels and inputs. */
 #ccg-dashboard .ccg-field > label {
   display: block;
   font-weight: 600;
@@ -387,9 +343,7 @@
 #ccg-dashboard .ccg-field > select,
 #ccg-dashboard .ccg-field > input,
 #ccg-dashboard .ccg-dropdown__summary {
-  /* Stated rather than inherited: a <summary> comes out content-box in Chrome despite
-     the inherit rule above, which made this control 18px taller than the select it is
-     meant to match. */
+  /* Explicit: Chrome renders a <summary> as content-box despite the inherit rule above. */
   box-sizing: border-box;
   width: 100%;
   max-width: 24rem;
@@ -399,9 +353,6 @@
   background: var(--ccg-bg);
 }
 
-/* The label above the practice filter is a <span>, not a <label>: a <summary> is not a
-   labelable control, so aria-labelledby ties the two together instead. It has to look
-   exactly like the real labels beside it. */
 #ccg-dashboard .ccg-label {
   display: block;
   font-weight: 600;
@@ -409,7 +360,7 @@
 }
 
 /* ==========================================================================
-   MAP CONTROLS (Task 06)
+   MAP CONTROLS
    ========================================================================== */
 
 #ccg-dashboard .ccg-controls__actions {
@@ -417,7 +368,6 @@
   align-items: end;
 }
 
-/* A plain button, sized to stay a comfortable touch target at 360px. */
 #ccg-dashboard .ccg-button {
   min-height: 2.75rem;
   padding: 0.5rem 1rem;
@@ -438,8 +388,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* The search is the one control that gets a line of its own: a city name is longer
-     than a bucket label and the input should not be half a row wide. */
   #ccg-dashboard .ccg-controls__actions,
   #ccg-dashboard .ccg-field--wide {
     grid-column: 1 / -1;
@@ -452,10 +400,7 @@
 
 #ccg-dashboard .ccg-table-container {
   overflow-x: auto;
-  /* The containing block for the visually-hidden spans inside the table's buttons.
-     Without it those absolutely-positioned 1px boxes are laid out against the page,
-     and a wide table pushes them past the viewport — a page that scrolls sideways
-     because of text nobody can see. */
+  /* Containing block for the visually-hidden spans inside the table's buttons. */
   position: relative;
 }
 
@@ -487,11 +432,7 @@
     max-width: var(--ccg-measure-wide);
   }
 
-  /* Only the graphic gets the extra width; prose stays at the reading measure
-     and stays centerd, so every section shares one left edge. */
   #ccg-dashboard .ccg-section--wide > :not(.ccg-figure):not(.ccg-table-container):not(.ccg-pagination) {
-    /* The measure minus the section padding, so this left edge matches the
-       narrow sections' text exactly. */
     max-width: calc(var(--ccg-measure) - var(--ccg-space) * 2);
     margin-inline: auto;
   }
@@ -502,7 +443,7 @@
 }
 
 /* ==========================================================================
-   MAP (Task 05)
+   MAP
    ========================================================================== */
 
 #ccg-dashboard {
@@ -526,8 +467,7 @@
   fill: var(--ccg-map-land);
 }
 
-/* Hairlines stay one device pixel at every width, so the map reads the same at
-   360px and 1280px without a second set of tuned stroke widths. */
+/* Hairlines stay one device pixel at every width. */
 #ccg-dashboard .ccg-map__states,
 #ccg-dashboard .ccg-map__outline,
 #ccg-dashboard .ccg-map__bubble,
@@ -548,16 +488,13 @@
   stroke-width: 1;
 }
 
-/* The stroke, not the fill, is what carries 3:1 against the land — the lightest two
-   steps of the sequential ramp are deliberately close to the basemap color. */
+/* The stroke, not the fill, carries 3:1 contrast against the land. */
 #ccg-dashboard .ccg-map__bubble {
   stroke: var(--ccg-map-bubble-stroke);
   stroke-width: 1;
   fill-opacity: 0.85;
 }
 
-/* A pinned city's bubble keeps its own colour — the ring is what marks it — but gains
-   the contrast to be found under a ring. */
 #ccg-dashboard .ccg-map__bubble.is-highlighted {
   stroke: var(--ccg-map-accent);
   stroke-width: 2;
@@ -574,9 +511,6 @@
   stroke-width: 1.5;
 }
 
-/* Narrow viewports: the callouts stack under the map and the leader lines go away.
-   At 360px the map is ~330px wide and no stretch of ocean is wide enough to hold a
-   legible label, so the annotation says in words where its circle is. */
 #ccg-dashboard .ccg-map__annotation {
   margin-block-start: 0.5rem;
   padding-inline-start: 0.5rem;
@@ -597,8 +531,6 @@
     display: inline;
   }
 
-  /* Positions are percentages of the SVG box, which is exactly this container, so
-     label and leader line stay registered at every width. */
   #ccg-dashboard .ccg-map__annotation {
     position: absolute;
     left: var(--ccg-annotation-left);
@@ -612,13 +544,10 @@
     line-height: 1.25;
   }
 
-  /* The leader line says where the city is; the sentence is only for the stacked layout. */
   #ccg-dashboard .ccg-map__annotation-where {
     display: none;
   }
 
-  /* No clear space was found for this label, so it reads as a note under the map
-     instead of covering the cities the reader is looking at. */
   #ccg-dashboard .ccg-map__annotation--unplaced {
     position: static;
     width: auto;
@@ -634,8 +563,6 @@
   }
 }
 
-/* The key sits above the map, not under it: below the map it pushed the table a legend's
-   height further down, and the reader needs the encoding before the bubbles, not after. */
 #ccg-dashboard .ccg-legend {
   display: grid;
   gap: 0.75rem;
@@ -676,10 +603,6 @@
   background: var(--ccg-dot-fill, transparent);
 }
 
-/* The size key uses one neutral swatch at four sizes, so nothing in it reads as a
-   position on the color ramp; the color key is the reverse — one size, six fills.
-   ccg-dashboard.js writes the other half of each pair from the same tables the
-   bubbles are drawn from. */
 #ccg-dashboard .ccg-legend__group--size .ccg-legend__dot {
   --ccg-dot-fill: #c8d6e3;
 }
@@ -695,13 +618,8 @@
 }
 
 /* ==========================================================================
-   TABLE (Task 08)
+   TABLE
    ========================================================================== */
-
-/* Written by hand rather than vendored from USWDS (D3 allows either): what we needed
-   was ~60 lines of rules, and copying USWDS's table CSS would have dragged in its
-   token layer to rescope. The accessible part of D3 — the markup and behavior — is
-   implemented in ccg-dashboard.js as specified. */
 
 #ccg-dashboard {
   --ccg-table-stripe: #f6f7f8;
@@ -740,8 +658,6 @@
   font-weight: 600;
 }
 
-/* The count and the glyphs are narrow, fixed-content columns; the two name columns get
-   whatever is left, which is what keeps 360px from overflowing. */
 #ccg-dashboard .ccg-table__head-cell--state,
 #ccg-dashboard .ccg-table__head-cell--ccgCount,
 #ccg-dashboard .ccg-table__head-cell--details {
@@ -759,7 +675,6 @@
   display: inline-block;
 }
 
-/* Fixed-width slots so a glyph lines up under its initial in the header. */
 #ccg-dashboard .ccg-marks__mark {
   display: inline-block;
   width: 1.15em;
@@ -767,15 +682,12 @@
   color: var(--ccg-text-muted);
 }
 
-/* Filled vs open glyph is the encoding; weight and color only reinforce it, so the
-   column still reads correctly in monochrome or with colors overridden. */
+/* Filled vs. open glyph is the encoding; weight and color only reinforce it. */
 #ccg-dashboard .ccg-marks__mark.is-reported {
   color: var(--ccg-focus);
   font-weight: 700;
 }
 
-/* A row for a place nobody reported on: quieter than the data, and flagged in words
-   rather than by being greyed out — colour alone says nothing. */
 #ccg-dashboard .ccg-table__flag {
   color: var(--ccg-text-muted);
   font-weight: 400;
@@ -791,8 +703,6 @@
   white-space: nowrap;
 }
 
-/* A pinned row is out of the sorted order on purpose. The bar and the tint say so to
-   anyone who can see them; the row's own "(pinned)" says so to anyone who cannot. */
 #ccg-dashboard .ccg-table__row--pinned > * {
   background: var(--ccg-pinned-bg);
 }
@@ -809,38 +719,6 @@
   border-color: var(--ccg-map-accent);
   color: var(--ccg-map-accent);
   font-weight: 700;
-}
-
-/* "About this data", collapsed. The summary is one line, so the search above it is still
-   effectively next to the table below it (D9). */
-#ccg-dashboard .ccg-about {
-  margin-block-start: var(--ccg-space);
-  border-block-start: 1px solid var(--ccg-rule);
-}
-
-#ccg-dashboard .ccg-about__summary {
-  padding-block: 0.5rem;
-  cursor: pointer;
-  list-style: none;
-}
-
-#ccg-dashboard .ccg-about__summary::-webkit-details-marker {
-  display: none;
-}
-
-/* A heading inside the summary keeps the section in the document outline; the caret is
-   generated so nothing but the heading text is read. */
-#ccg-dashboard .ccg-about__summary h3 {
-  display: inline;
-  font-size: 1rem;
-}
-
-#ccg-dashboard .ccg-about__summary::after {
-  content: " \25be";
-}
-
-#ccg-dashboard .ccg-about[open] .ccg-about__summary::after {
-  content: " \25b4";
 }
 
 #ccg-dashboard .ccg-about__body > * + * {
@@ -888,11 +766,6 @@
   color: var(--ccg-text);
 }
 
-/* Details and Pin stop fitting side by side in the actions column well before the table
-   itself gets tight, so they stack here rather than at the narrow breakpoint below. The
-   block margin is what separates the stacked pair — the base rule's vertical margin is
-   0, which is right for a row and touching for a stack. 559 is the underside of the
-   560px boundary the profile fields already use, so this adds no new breakpoint. */
 @media (max-width: 559px) {
   #ccg-dashboard .ccg-button--small {
     display: block;
@@ -900,20 +773,12 @@
   }
 }
 
-/* Narrow viewports: the same six cells, tightened until they fit inside 360px. Nothing
-   is clipped or truncated — the text gets smaller, the padding tighter, and long city
-   names hyphenate. Ordered after the block above so these tighter values win at 479. */
 @media (max-width: 479px) {
-  /* Half-bleed: the table reclaims the section's side padding, which is 32px of the
-     ~312px it would otherwise have. Prose around it keeps its inset. */
   #ccg-dashboard .ccg-table-container {
     margin-inline: calc(var(--ccg-space) * -1);
     padding-inline: 0.25rem 0;
   }
 
-  /* 12px, the smallest step that fits six cells across 360px without clipping or
-     breaking words apart. Everything the row holds is repeated at full size in the
-     city profile below it. */
   #ccg-dashboard .ccg-table {
     font-size: 0.75rem;
   }
@@ -928,15 +793,11 @@
     font-size: 0.75rem;
   }
 
-  /* Long city names hyphenate rather than run the column wide. Words still break only
-     where a hyphen may fall — nothing is clipped and no word is cut mid-syllable. */
   #ccg-dashboard .ccg-table tbody th {
     hyphens: auto;
     padding-left: 0.5rem;
   }
 
-  /* The button carries its own border, so the row needs a little air before the
-     table edge. */
   #ccg-dashboard .ccg-table__actions {
     white-space: nowrap;
     padding-inline: 0.25rem;
@@ -953,11 +814,6 @@
     margin: 0.1rem 0rem 0.1rem 0.5rem;
   }
 
-  /* The sort arrow shrinks with the cell but stays on the label's line: the arrow is
-     what says which way the column is sorted, so it has to read as part of the label
-     rather than as a mark floating under it. These columns are width: 1%, so the
-     column takes its width from the button's min-content — label, gap, and arrow
-     together — and never wraps. */
   #ccg-dashboard .ccg-table__sort {
     gap: 0.125rem;
   }
@@ -967,10 +823,6 @@
   }
 }
 
-/* The last of the width: the actions column gives up the buttons' own margins, including
-   the 0.5rem indent above, and they narrow to the width of "Details" itself. Scoped to
-   the table so the pagination buttons, which take their spacing from a flex gap rather
-   than from these margins, are left alone. */
 @media (max-width: 350px) {
   #ccg-dashboard .ccg-table .ccg-button--small {
     min-width: 3.25rem;
@@ -979,7 +831,7 @@
 }
 
 /* ==========================================================================
-   CITY PROFILE ROWS (Task 08)
+   CITY PROFILE ROWS
    ========================================================================== */
 
 #ccg-dashboard .ccg-table__profile-row > td {
@@ -997,8 +849,6 @@
   line-height: 1.3;
 }
 
-/* Sits between the city's name and its facts, so the action is read before the data
-   rather than after four practice blocks. */
 #ccg-dashboard .ccg-profile__cta {
   margin-block: 0.25rem 0.75rem;
 }
@@ -1020,7 +870,6 @@
 }
 
 @media (min-width: 560px) {
-  /* Term and value side by side once there is room for both without hyphenating. */
   #ccg-dashboard .ccg-profile__fields {
     grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
   }
@@ -1032,7 +881,7 @@
 }
 
 /* ==========================================================================
-   PAGINATION (Task 08)
+   PAGINATION
    ========================================================================== */
 
 #ccg-dashboard .ccg-pagination {
@@ -1065,11 +914,9 @@
 }
 
 /* ==========================================================================
-   SORT + SEARCH + CITY NOT FOUND (Task 09)
+   SORT + SEARCH + CITY NOT FOUND
    ========================================================================== */
 
-/* The header button fills its cell so the whole header is the target, and it looks like
-   a header rather than a form control. */
 #ccg-dashboard .ccg-table__sort {
   display: flex;
   align-items: baseline;
@@ -1124,16 +971,4 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.75rem;
-}
-
-/* No animation exists yet — this is the scaffold every later task adds to. */
-@media (prefers-reduced-motion: reduce) {
-  #ccg-dashboard *,
-  #ccg-dashboard *::before,
-  #ccg-dashboard *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }

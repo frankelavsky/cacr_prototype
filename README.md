@@ -55,7 +55,7 @@ This repo can be used in a variety of ways. Currently it hosts as a link via git
 
 However, I recommend moving this whole repo into an equivalent GitHub repo that can be managed by the web team. Feel free to fork it or download it and make it your own. Having the whole repo allows you to build the data (see above section) as new data comes in, manage privacy/access, and so on.
 
-In terms of getting the html/css/js from this repo's `src/` folder into some end format (Drupal or otherwise), you can either copy+paste the parent-most div or relevant parts within the HTML file into your own, and move the JS/CSS files into a sibling location, or you can keep the files in `src/` together and put them into their own repo that ends up hosted somewhere as an `<iframe>` you can place into your main site. The latter can be accomplished from the same repo you copy over that has everything in it (including the build process) or simply a repo of just these 5 files. Up to you all.
+In terms of getting the html/css/js from this repo's `src/` folder into some end format (Drupal or otherwise), you can either copy+paste the parent-most div or relevant parts within the HTML file into your own, and move the JS/CSS files into a sibling location (make note of path changes, of course), or you can keep the files in `src/` together and put them into their own repo that ends up hosted somewhere as an `<iframe>` you can place into your main site. The latter can be accomplished from the same repo you copy over that has everything in it (including the build process) or simply a repo of just these 5 files. Up to you all.
 
 ## Bigger changes in the future?
 

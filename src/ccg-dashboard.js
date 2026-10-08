@@ -1,34 +1,18 @@
 (function () {
   'use strict';
 
-  // The markup is not built here. index.html (and the Drupal embed snippet cut from it)
-  // holds every element that always exists, plus all author-written copy. This file
-  // fills the empty slots in that markup from CCG_DATA, renders the parts whose number
-  // depends on the data — bubbles, options, rows, legend entries — and wires the
-  // controls. Slots are found by id or by a data-ccg-* attribute.
-
-  // ==========================================================================
-  // DATA ACCESS
-  // ==========================================================================
-
-  function getData() {
-    return window.CCG_DATA || { generated: false };
-  }
-
   function stats() {
-    return state.data.stats || {};
+    return state.data.stats;
   }
 
   function meta() {
-    return state.data.meta || {};
+    return state.data.meta;
   }
 
   function dataset() {
-    return state.data.dataset || [];
+    return state.data.dataset;
   }
 
-  // Every lookup goes through here: a slot the markup is missing is a broken embed, not
-  // something to paper over with a silent null.
   function find(root, selector) {
     var node = root.querySelector(selector);
     if (!node) throw new Error('ccg-dashboard: no element matching ' + selector);
@@ -45,23 +29,16 @@
 
   var state = {};
 
-  // The two cities Map 1 used to call out. Map 1 is gone; they open the page as pinned
-  // cities instead, so the page still starts by showing a very small city and a very
-  // large one that both report all five practices. Unpinning them is allowed.
+  // A very small and a very large city that both report all five practices.
   var DEFAULT_PINS = ['coffman-cove--ak', 'nashville--tn'];
 
-  // Four is what the map can label legibly: each callout needs a box of clear space, and
-  // the fifth one starts covering cities the reader is trying to see.
+  // More callout labels than this no longer fit on the map without covering cities.
   var MAX_PINS = 4;
 
-  // One object drives everything: the map, the table and both status lines read it.
-  // `practices` holds practice keys and means "reports at least all of these";
-  // `pinned` holds record ids, in the order they were pinned.
   var DEFAULT_FILTERS = {
     practices: [],
     sizeBucket: 'all',
-    query: '',
-    pinned: DEFAULT_PINS.slice()
+    query: ''
   };
 
   function createStore(initial) {
@@ -88,14 +65,7 @@
   // FILTERS
   // ==========================================================================
 
-  // One predicate, one meaning of "matches", for both views (D11). The map draws the
-  // matching set plus the pinned cities; the table lists the same set with the pinned
-  // cities lifted to the top.
-
-  // A practice counts as reported when its status is one of the three CCG_count counts,
-  // so the checkbox filter, the glyph row and the "Practices" number always describe the
-  // same thing. The difference between "in practice", "in planning" and "not currently
-  // active" is in the city profile, where there is room to state it (D5).
+  // The statuses CCG_count counts, so the filter, the glyphs and the Practices number agree.
   var REPORTED_STATUSES = ['in_practice', 'in_planning', 'not_active'];
 
   function isReported(record, practiceKey) {
@@ -103,17 +73,14 @@
     return Boolean(practice) && REPORTED_STATUSES.indexOf(practice.status) !== -1;
   }
 
-  // Inclusive, not exclusive: checking three practices asks for cities reporting at least
-  // those three, not cities reporting only those three. A city doing more is still an
-  // answer to "who else has a youth council".
+  // At least these practices, not only these.
   function reportsEvery(record, practiceKeys) {
     return practiceKeys.every(function (key) {
       return isReported(record, key);
     });
   }
 
-  // Accents are stripped on both sides so "Anasco" finds "Añasco": a reader typing on a
-  // US keyboard cannot produce the accented form, and the national lookup is full of them.
+  // Strips accents so "Anasco" finds "Añasco".
   function fold(text) {
     return String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
@@ -122,7 +89,6 @@
     return typeof query === 'string' ? fold(query).trim() : '';
   }
 
-  // City, USPS code and state name in one string, so "athens oh" and "ohio" both work.
   function matchesQuery(record, query) {
     return fold(record.city + ' ' + record.state + ' ' + record.stateName).indexOf(query) !== -1;
   }
@@ -161,8 +127,6 @@
     return pinnedIds(filters).indexOf(record.id) !== -1;
   }
 
-  // In pin order, not in dataset order: the reader put them there one at a time, and the
-  // list they see should not reshuffle when they add one.
   function pinnedRecords(records, filters) {
     return pinnedIds(filters)
       .map(function (id) {
@@ -177,38 +141,25 @@
   // PLACES WITH NO DATA
   // ==========================================================================
 
-  // `us-cities.json` is every incorporated place the Census lists that the survey does not
-  // cover — 31,743 of them. It is the absence of data rather than data, so these places
-  // never appear in the default table, never reach the map, and are never counted in a
-  // statistic. A search is the only thing that surfaces them, and every value they carry
-  // reads "Unreported": D5's third case, never asked, as against asked-and-blank.
-
-  // Three characters: "oh" would otherwise pull in several thousand places nobody was
-  // looking for, and bury the fifteen Ohio cities that did answer.
+  // Shorter queries ("oh") would match thousands of places and bury the surveyed cities.
   var NO_DATA_MIN_QUERY = 3;
 
-  // Enough to show a reader their city is in there; not so many that the rows which
-  // answer the question are buried under the rows that cannot.
   var NO_DATA_LIMIT = 25;
 
   function noDataLabel(part) {
-    var labels = (meta().labels || {}).noData || {};
-    return labels[part] || (part === 'flag' ? '(No Data)' : 'Unreported');
+    return meta().labels.noData[part];
   }
 
   function isNoData(record) {
     return Boolean(record && record.noData);
   }
 
-  // The same shape a surveyed record has, so every stage downstream — sorting, paging,
-  // rendering — treats it as an ordinary row and only the places that must say
-  // "Unreported" have to know the difference.
   function noDataRecord(city, stateCode, stateNames) {
     return {
       id: 'no-data--' + fold(city).replace(/[^a-z0-9]+/g, '-') + '--' + fold(stateCode),
       city: city,
       state: stateCode,
-      stateName: (stateNames || {})[stateCode] || stateCode,
+      stateName: stateNames[stateCode] || stateCode,
       region: null,
       populationSize: null,
       populationIndex: -1,
@@ -220,9 +171,7 @@
     };
   }
 
-  // Only a search reaches them, and only a search on its own: a practice or a size filter
-  // asks a question about reported data, which these places by definition cannot answer.
-  // Returns the capped rows and the full count, because the reader is owed both.
+  // Only a bare search surfaces no-data places; practice and size filters exclude them.
   function noDataMatches(places, filters, stateNames) {
     var query = normalizeQuery(filters && filters.query);
     var none = { shown: [], total: 0 };
@@ -230,23 +179,21 @@
     if (!places || query.length < NO_DATA_MIN_QUERY) return none;
     if (practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all') return none;
 
-    var names = stateNames || {};
     var shown = [];
     var total = 0;
 
     Object.keys(places).forEach(function (code) {
-      var haystackState = ' ' + code + ' ' + (names[code] || code);
+      var haystackState = ' ' + code + ' ' + (stateNames[code] || code);
       places[code].forEach(function (city) {
         if (fold(city + haystackState).indexOf(query) === -1) return;
         total += 1;
-        if (shown.length < NO_DATA_LIMIT) shown.push(noDataRecord(city, code, names));
+        if (shown.length < NO_DATA_LIMIT) shown.push(noDataRecord(city, code, stateNames));
       });
     });
     return { shown: shown, total: total };
   }
 
-  // One scan per settled filter change, not one per subscriber: the status line and the
-  // table both need this answer, and 31,743 names is not free.
+  // One scan of ~31k names per filter change, shared by the status line and the table.
   var noDataCache = { key: null, value: { shown: [], total: 0 } };
 
   function currentNoData(filters) {
@@ -272,27 +219,15 @@
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
 
-  // Bubble area encodes the ordinal population bucket. Four hand-tuned radii in
-  // viewBox units: big enough to read at 360px, small enough that the Northeast
-  // stays legible.
   var BUBBLE_RADII = [3, 4.5, 6.5, 9.5];
 
-  // One city reported no population size. It draws at the smallest radius and the
-  // legend says so, rather than being silently folded into "under 10,000" (D5).
   var UNKNOWN_POPULATION_RADIUS = 3;
 
-  // Six-step sequential ramp, hand-sampled from ColorBrewer Blues (no color library).
-  // Adjacent steps differ by at least 1.28:1; the dark stroke every bubble carries is
-  // what supplies the 3:1 non-text contrast against the map, not the fill.
+  // ColorBrewer Blues. The bubble stroke, not the fill, carries the 3:1 contrast.
   var COUNT_COLORS = ['#deebf7', '#b5d4ea', '#82badb', '#4f9bc9', '#2b76b0', '#08417e'];
 
   var ANNOTATION_RING_RADIUS = 13;
 
-  // A callout is a ring on the city, a leader line and a label box. Map 1's two labels
-  // sat in hand-measured empty space; a pin can land anywhere, so the box is placed at
-  // run time: try the eight compass directions at growing distances and take the first
-  // position that covers no bubble and no other label. Sizes are viewBox units, except
-  // the width, which is a percentage because the label is HTML over the SVG.
   var PIN_LABEL_WIDTH_PCT = 18;
   var PIN_LABEL_HEIGHT = 80;
   var PIN_LABEL_GAP = 6;
@@ -304,7 +239,6 @@
     { x: 0.7, y: 0.7 }, { x: 0.7, y: -0.7 }, { x: -0.7, y: 0.7 }, { x: -0.7, y: -0.7 }
   ];
 
-  // Nearest first: a label two inches from its city is worse than one beside it.
   var PIN_DISTANCES = [26, 45, 70, 105, 150, 205, 270];
 
   function bubbleRadius(populationIndex) {
@@ -330,12 +264,9 @@
   }
 
   function basemap() {
-    return state.data.basemap || { width: 975, height: 610, nationPath: '', statesPath: '' };
+    return state.data.basemap;
   }
 
-  // The markup ships the empty <svg> and its five children; the outline geometry is
-  // written once here and never touched again. The viewBox comes from the data rather
-  // than the markup, so a new basemap cannot leave a stale box behind.
   function paintBasemap(svg) {
     var geometry = basemap();
     svg.setAttribute('viewBox', '0 0 ' + geometry.width + ' ' + geometry.height);
@@ -354,32 +285,24 @@
     return circle;
   }
 
-  // Pure: no state, no listeners, no tabindex. Redraws the city layer from `cities`.
-  // options: { radiusScale: number, highlight: record => boolean }
   function renderMap(svg, cities, options) {
-    var settings = options || {};
-    var scale = typeof settings.radiusScale === 'number' ? settings.radiusScale : 1;
-    var highlight = typeof settings.highlight === 'function' ? settings.highlight : null;
     var layer = find(svg, '.ccg-map__cities');
 
     clear(layer);
     cities
       .filter(hasCoordinates)
-      // Largest first, so a >200,000 bubble never buries a small city drawn under it.
       .slice()
+      // Largest first, so a big bubble never covers a small one.
       .sort(function (a, b) {
         return bubbleRadius(b.populationIndex) - bubbleRadius(a.populationIndex);
       })
       .forEach(function (record) {
-        var radius = bubbleRadius(record.populationIndex) * scale;
-        layer.appendChild(bubble(record, radius, highlight ? highlight(record) : false));
+        layer.appendChild(bubble(record, bubbleRadius(record.populationIndex), options.highlight(record)));
       });
   }
 
   // --------------------------- pin callouts ---------------------------------
 
-  // Leader line stops at the ring rather than at the city center, so it never draws
-  // across the bubble it is pointing at.
   function leaderLine(from, record) {
     var dx = record.x - from.x;
     var dy = record.y - from.y;
@@ -403,8 +326,6 @@
     return ring;
   }
 
-  // Label text is generated from the record, so a pinned city says the same kinds of
-  // things the two hand-written callouts used to say, for any city the reader picks.
   function populationPhrase(record) {
     var bucket = record.populationSize;
     if (typeof bucket !== 'string' || bucket === 'no_response') return 'population not reported';
@@ -423,7 +344,6 @@
     return populationPhrase(record) + ', and ' + countPhrase(record);
   }
 
-  // Only read in the stacked layout, where there is no leader line to follow.
   function pinWhere(record) {
     if (!hasCoordinates(record)) {
       return 'Not on the map \u2014 ' + record.stateName + ' falls outside the projection this map uses.';
@@ -445,8 +365,6 @@
       b.top + b.height + gap < a.top);
   }
 
-  // Distance to the segment, not to the infinite line: a leader that stops short of a
-  // bubble has not crossed it.
   function distanceToSegment(point, from, to) {
     var dx = to.x - from.x;
     var dy = to.y - from.y;
@@ -458,8 +376,6 @@
     return Math.hypot(point.x - (from.x + t * dx), point.y - (from.y + t * dy));
   }
 
-  // The leader starts at the point on the box closest to the city, so the line is as
-  // short as the placement allows and never starts behind the label.
   function leaderAnchor(box, record) {
     return {
       x: Math.max(box.left, Math.min(record.x, box.left + box.width)),
@@ -479,9 +395,7 @@
     else if (direction.y < 0) top = record.y + direction.y * distance - size.height;
     else top = record.y - size.height / 2;
 
-    // Slid back inside rather than thrown away: a city near the edge — Coffman Cove sits
-    // 40 units from the bottom — would otherwise reject every position beside it and take
-    // a label halfway across the country.
+    // Slid back inside rather than rejected, so a city near the edge still gets a nearby label.
     return {
       left: Math.max(0, Math.min(left, bounds.width - size.width)),
       top: Math.max(0, Math.min(top, bounds.height - size.height)),
@@ -490,8 +404,6 @@
     };
   }
 
-  // Candidate step for the fallback scan. Small enough to find the gaps the eight
-  // directions miss, large enough that the whole map is a few thousand candidates.
   var PIN_SCAN_STEP = 12;
 
   function calloutSpot(box, record, geometry) {
@@ -504,8 +416,6 @@
     };
   }
 
-  // `clean` asks for a leader line that passes no other bubble. Nothing on the east coast
-  // can satisfy that with 382 bubbles drawn, so it is a preference, not a requirement.
   function boxFits(box, record, cities, placed, clean) {
     if (boxCovers(box, record, 0)) return false;
     if (coversAnyCity(box, cities)) return false;
@@ -514,9 +424,6 @@
     return !leaderCrossesCity(leaderAnchor(box, record), record, cities);
   }
 
-  // Every box the map can hold, nearest to the city first. Only reached when all eight
-  // directions land on a bubble — the dense northeast, or a city hemmed in by the coast —
-  // and it is what keeps a callout beside its city rather than across the country.
   function scanForCallout(record, cities, placed, geometry, size, clean) {
     var candidates = [];
 
@@ -542,9 +449,6 @@
     return null;
   }
 
-  // Pure, and exported for `node --test`: given a city, the bubbles currently drawn and
-  // the boxes already placed, say where this callout's label goes — or null when the map
-  // has no room for it, which the caller renders as a stacked note instead.
   function placeCallout(record, cities, placed, geometry) {
     var size = {
       width: (PIN_LABEL_WIDTH_PCT / 100) * geometry.width,
@@ -558,9 +462,7 @@
       }
     }
 
-    // Nearest clear box with a clean leader; then, failing that, the nearest clear box at
-    // all. A short line over a bubble or two still points at the right city, and it beats
-    // dropping the label out of the map entirely.
+    // Then the nearest free box with a clean leader line, then the nearest free box at all.
     var found = scanForCallout(record, cities, placed, geometry, size, true) ||
       scanForCallout(record, cities, placed, geometry, size, false);
     return found ? calloutSpot(found, record, geometry) : null;
@@ -578,8 +480,6 @@
     });
   }
 
-  // Cities inside the ring are the ones the ring is already pointing at, so the leader
-  // passing near them is not a collision.
   function leaderCrossesCity(anchor, record, cities) {
     return cities.some(function (city) {
       if (!hasCoordinates(city) || city.id === record.id) return false;
@@ -588,8 +488,7 @@
     });
   }
 
-  // The label is always built, placed or not: below 780px every label is a note under the
-  // map anyway, and an unplaceable one joins them there rather than vanishing.
+  // Always built: an unplaced label (and every label on narrow screens) becomes a note under the map.
   function calloutLabel(record, spot) {
     var note = element('p');
     note.className = 'ccg-map__annotation' + (spot ? '' : ' ccg-map__annotation--unplaced');
@@ -611,7 +510,6 @@
     return note;
   }
 
-  // Redrawn whenever the pins or the drawn cities change: placement depends on both.
   function renderCallouts(container, svg, records, cities) {
     var layer = find(svg, '.ccg-map__annotations');
     var geometry = basemap();
@@ -634,19 +532,14 @@
     });
   }
 
-  // A legend swatch is the same encoding the bubbles use, so its size and fill come from
-  // the same two tables rather than from hand-written CSS that could drift from them.
   function legendDotSize(populationIndex) {
     return Math.round(bubbleRadius(populationIndex) * 2.2);
   }
 
-  // The smallest bubble is also what a city that reported no population size is drawn at,
-  // so that entry carries the marker for the note under the list. Pure, so the asterisk
-  // cannot drift from the note without a test noticing.
+  // The smallest size also draws cities with no reported population, hence the asterisk.
   function legendBucketLabel(index, metaData) {
-    var short = (metaData.populationBucketsShort || [])[index];
-    var label = short || (metaData.populationBuckets || [])[index] || '';
-    return index === 0 && label ? label + '*' : label;
+    var label = metaData.populationBucketsShort[index];
+    return index === 0 ? label + '*' : label;
   }
 
   function fillLegend(figure) {
@@ -664,15 +557,13 @@
     });
   }
 
-  // Fills one of the two <figure>s the markup ships and hands back its <svg>, which is
-  // the only node Map 2 needs to keep redrawing.
   function fillMapFigure(figure, options) {
     var svg = find(figure, '.ccg-map__svg');
 
     paintBasemap(svg);
     fillLegend(figure);
     renderMap(svg, options.cities, options.render);
-    renderCallouts(find(figure, '.ccg-map'), svg, options.callouts || [], options.cities);
+    renderCallouts(find(figure, '.ccg-map'), svg, options.callouts, options.cities);
     find(figure, 'figcaption').textContent = options.caption;
     return svg;
   }
@@ -681,12 +572,6 @@
   // CAPTION AND SHARED TEXT HELPERS
   // ==========================================================================
 
-  // The caption is the accessible alternative to the graphic, and it is visible to
-  // everyone — nothing here is screen-reader-only. The sentences that report what a
-  // filter did live with the controls and the table instead (D24).
-
-  // Short enough to feel live while typing, long enough that a whole word is one write
-  // to the two status lines rather than one per keystroke.
   var SEARCH_DEBOUNCE_MS = 150;
 
   function joinList(parts, separator) {
@@ -699,26 +584,11 @@
     return record.city + ', ' + record.state;
   }
 
-  // Short names, lowercased for mid-sentence use: "cities reporting youth councils".
-  // The caption generator takes its labels as an argument rather than reaching for
-  // CCG_DATA, so `node --test` can drive it with no data loaded.
-  // The caption is the map's text alternative, and it is deliberately static. It says
-  // what a bubble means and what the map leaves out — the two things only the graphic
-  // knows. What is currently *shown* is said twice already, by the status line under the
-  // controls and by the table's own status, and a third copy under the map meant three
-  // live regions announcing one filter change (2026-09-22).
-  function mapCaption(statsData, metaData) {
-    var missing = statsData.citiesNotOnMap || [];
-    var encoding = '';
-    /* old:
-      One bubble per surveyed city: its size is the city\u2019s population, ' +
-      'its colour is how many of the five practices the city reports \u2014 light for none, ' +
-      'dark for all five \u2014 and a circled bubble is a pinned city.
-    */
+  function mapCaption(statsData) {
+    var missing = statsData.citiesNotOnMap;
+    if (missing.length === 0) return '';
 
-    if (missing.length === 0) return encoding;
-
-    return encoding + ' ' + statsData.citiesOnMap + ' of the ' + statsData.totalCities +
+    return statsData.citiesOnMap + ' of the ' + statsData.totalCities +
       ' are plotted: ' + joinList(missing) +
       (missing.length === 1 ? ' falls' : ' fall') + ' outside the projection this map uses.';
   }
@@ -734,9 +604,7 @@
     };
   }
 
-  // The live attributes go on after the first paint. A region that is already live when
-  // it enters the accessibility tree can be announced on page load, which is exactly the
-  // interruption this design is meant to avoid.
+  // Set after first paint so the region is not announced on page load.
   function makeLive(node) {
     afterFirstPaint(function () {
       node.setAttribute('aria-live', 'polite');
@@ -745,10 +613,6 @@
   }
 
   function afterFirstPaint(fn) {
-    if (typeof requestAnimationFrame !== 'function') {
-      setTimeout(fn, 0);
-      return;
-    }
     requestAnimationFrame(function () {
       requestAnimationFrame(fn);
     });
@@ -758,16 +622,8 @@
   // TABLE
   // ==========================================================================
 
-  // One pure pipeline: records -> filter -> sort -> paginate -> render, with the pinned
-  // cities lifted out before paging and put back on top of every page. Every stage takes
-  // its inputs as arguments and returns a new array, so `node --test` can drive them
-  // without a document. Every control reaches this pipeline now (D11).
-
   var DEFAULT_SORT = { column: 'city', direction: 'ascending' };
 
-  // The four sortable columns, keyed by the `data-ccg-sort` value on the header cell.
-  // `key` returns what to compare; `unranked` marks values the column cannot place —
-  // only "No response" population, which has no size to rank.
   var SORT_COLUMNS = {
     city: { label: 'City', key: function (record) { return record.city; } },
     state: { label: 'State', key: function (record) { return record.state; } },
@@ -779,7 +635,6 @@
     ccgCount: {
       label: 'Practices',
       key: function (record) { return record.ccgCount; },
-      // A place with no data has no count to rank, the way "No response" has no size.
       unranked: function (record) { return record.ccgCount === null; }
     }
   };
@@ -787,19 +642,12 @@
   var FILLED_MARK = '●';
   var EMPTY_MARK = '○';
 
-  // The table and the map now filter identically; this is the same call under a name the
-  // table's pipeline reads well with.
-  function filterRecords(records, filters) {
-    return applyFilters(records, filters);
-  }
-
   function compareValues(a, b) {
     if (typeof a === 'number' && typeof b === 'number') return a - b;
     return String(a).localeCompare(String(b));
   }
 
-  // City then state is the tiebreak for every column and it never reverses, so equal keys
-  // keep one stable, readable order whichever way the sorted column points (D6).
+  // City, then state, is a fixed tiebreak that never reverses with the sort direction.
   function sortRecords(records, sort) {
     var column = SORT_COLUMNS[sort && sort.column];
     if (!column) return records.slice();
@@ -825,8 +673,7 @@
     return Math.max(1, Math.ceil(total / perPage));
   }
 
-  // `page` is clamped rather than trusted: a search can shrink the list under the page
-  // the reader is on, and page 9 of 3 must resolve to a real page.
+  // The page is clamped: a narrower search can leave the current page past the end.
   function paginate(records, page, perPage) {
     var pages = pageCount(records.length, perPage);
     var current = Math.min(Math.max(page, 1), pages);
@@ -843,21 +690,15 @@
     };
   }
 
-  // Pinned cities are pulled out of the paged list and returned beside it: they head
-  // every page, in pin order, whether or not they match the filters. Counting them in
-  // the page total would make "rows 1-30 of 382" mean two different things on page 1 and
-  // page 2, so the pager counts the rest and the status line names the pins separately.
+  // Pinned rows head every page and are left out of the pager's count.
   function tableView(records, tableState) {
     var filters = tableState.filters;
     var pinned = pinnedRecords(records, filters);
-    var rest = filterRecords(records, filters).filter(function (record) {
+    var rest = applyFilters(records, filters).filter(function (record) {
       return !isPinned(filters, record);
     });
     var places = tableState.places || { shown: [], total: 0 };
 
-    // Surveyed cities first, then the places with no data — sorted within each group, not
-    // across them. One merged list would scatter the rows that answer the reader's
-    // question among the rows that cannot.
     var ordered = sortRecords(rest, tableState.sort)
       .concat(sortRecords(places.shown, tableState.sort));
 
@@ -870,7 +711,7 @@
   }
 
   function practiceList() {
-    return meta().practices || [];
+    return meta().practices;
   }
 
   function practiceInitial(practice) {
@@ -884,12 +725,9 @@
   }
 
   function label(group, value) {
-    var labels = (meta().labels || {})[group] || {};
-    return labels[value] || value;
+    return meta().labels[group][value] || value;
   }
 
-  // The Size column and the map legend take the short form; the filter select and the
-  // city profile keep the full one, where there is room and the exact bounds matter.
   function shortPopulation(record) {
     return label('populationSizeShort', record.populationSize);
   }
@@ -900,9 +738,7 @@
     return element('td', text);
   }
 
-  // "10,001-50,000" has no break opportunity of its own — no line may break after a
-  // hyphen that sits between digits — so the cell would set the column's width at its
-  // full length. A <wbr> after the hyphen offers the one break the range should take.
+  // A <wbr> after the hyphen lets "10,001-50,000" wrap instead of widening the column.
   function populationCell(text) {
     var cell = element('td');
     var parts = text.split('-');
@@ -917,9 +753,6 @@
     return cell;
   }
 
-  // Five fixed-width slots, in practice order. The header cell above carries the same
-  // five slots holding the practice initials, so each glyph sits under its own letter —
-  // that is what lets the column stay ~5em wide instead of repeating a label per row.
   function fillMarks(container, marks) {
     clear(container);
     marks.forEach(function (mark) {
@@ -941,8 +774,7 @@
     var cell = element('td');
     cell.className = 'ccg-table__marks';
 
-    // Five empty circles would say "reported none of the five", which is a claim. A place
-    // nobody surveyed has made no claim at all, so it gets dashes and says so in words.
+    // Dashes, not empty circles: no data is not the same as reporting none.
     if (isNoData(record)) {
       cell.appendChild(markRow(practiceList().map(function () {
         return { text: '\u2013', reported: false };
@@ -976,16 +808,12 @@
     button.setAttribute('aria-expanded', 'false');
     button.setAttribute('aria-controls', profileId(record));
 
-    // "Details" alone repeats 30 times in the button list; the city name makes each one
-    // distinguishable without adding visible noise to a narrow column.
     var forCity = element('span', ' for ' + cityLabel(record));
     forCity.className = 'ccg-visually-hidden';
     button.appendChild(forCity);
     return button;
   }
 
-  // aria-pressed, not a checkbox: pinning is a toggle on a thing, and the button's own
-  // state is what a screen reader announces on the press the reader just made.
   function pinButton(record, pinned, atLimit) {
     var button = element('button', pinned ? 'Unpin' : 'Pin');
     button.type = 'button';
@@ -1011,8 +839,6 @@
 
     var city = element('th', record.city);
     city.setAttribute('scope', 'row');
-    // Position and a background colour are not available to a screen reader, and the row
-    // is out of alphabetical order for a reason the reader deserves to hear.
     if (settings.pinned) city.appendChild(hiddenLabel(' (pinned)'));
     if (isNoData(record)) {
       var flag = element('span', ' ' + noDataLabel('flag'));
@@ -1028,8 +854,6 @@
 
     var actions = element('td');
     actions.className = 'ccg-table__actions';
-    // Nothing to pin: a place with no data has nothing to compare and no bubble on the
-    // map to circle.
     if (!isNoData(record)) {
       actions.appendChild(pinButton(record, Boolean(settings.pinned), Boolean(settings.atLimit)));
     }
@@ -1038,7 +862,6 @@
     return row;
   }
 
-  // An em dash carries nothing to a screen reader, so the word rides along hidden.
   function unreportedCell() {
     var cell = element('td');
     var mark = element('span', '\u2014');
@@ -1056,8 +879,7 @@
     list.appendChild(element('dd', description));
   }
 
-  // `ombuds_leadership` is free text with more than one answer allowed, so it arrives as
-  // an array of the respondent's own words rather than as a coded value with a label.
+  // ombuds_leadership is a multi-select, so it arrives as an array of answers.
   function detailValue(value) {
     if (Array.isArray(value)) return joinList(value);
     return label('detail', value);
@@ -1072,9 +894,6 @@
     var fields = element('dl');
     fields.className = 'ccg-profile__fields';
 
-    // Every field, still named, so the profile of a place with no data has the same shape
-    // as the profile of a city that answered — and the difference is stated, not implied
-    // by an empty space.
     if (isNoData(record)) {
       field(fields, 'Status', noDataLabel('value'));
       field(fields, 'Mandate', noDataLabel('value'));
@@ -1084,7 +903,7 @@
 
     field(fields, 'Status', label('status', reported.status));
     field(fields, 'Mandate', label('mandate', reported.mandate));
-    Object.keys(reported.details || {}).forEach(function (key) {
+    Object.keys(reported.details).forEach(function (key) {
       field(fields, label('detailQuestion', key), detailValue(reported.details[key]));
     });
 
@@ -1092,8 +911,6 @@
     return block;
   }
 
-  // The one action for a place nobody has reported for. Its own sentence, because "help
-  // us report" is a different ask from "tell us we got your city wrong".
   function noDataCall(record) {
     var note = element(
       'p',
@@ -1110,10 +927,6 @@
     return note;
   }
 
-  // First thing under the city's name: the one action a reader can take about this city.
-  // The link is a get-involved page elsewhere on UNICEF USA's site (O3) — this page has no
-  // backend and hosts no form. Every row builds one, so the city name rides along hidden:
-  // thirty links all reading "[FILLER: link text]" would be thirty identical links.
   function profileCall(record) {
     var note = element('p', '[FILLER: Want to get involved? See changes you would like to make?] ');
     note.className = 'ccg-profile__cta';
@@ -1149,8 +962,7 @@
     return profile;
   }
 
-  // Built on first expand, not on render: with "All" rows showing, eagerly building 384
-  // profiles is 384 x 5 practices of DOM nobody has asked to see.
+  // Profiles are built on first expand, not on render.
   function profileRow(record, columnCount) {
     var row = element('tr');
     row.className = 'ccg-table__profile-row';
@@ -1172,10 +984,6 @@
     row.hidden = expanded;
   }
 
-  // The whole body is rebuilt on every change. It is at most 384 rows of five short
-  // cells, and it keeps one render path instead of a diff — the cost is that open city
-  // profiles close when the page, size or search changes, which is stated in the copy.
-  // `options` carries the pin state and the pin toggle, which every row needs.
   function renderRows(body, rows, columnCount, options) {
     var settings = options || {};
     clear(body);
@@ -1185,7 +993,6 @@
       var row = tableRow(record, { pinned: entry.pinned, atLimit: settings.atLimit });
       var profile = profileRow(record, columnCount);
       var details = find(row, '[aria-controls]');
-      // A place with no data has no Pin button; every surveyed row does.
       var pin = row.querySelector('[data-ccg-pin]');
 
       details.addEventListener('click', function () {
@@ -1212,8 +1019,6 @@
     return node;
   }
 
-  // APG sortable-table pattern: the button is inside the header cell and aria-sort lives
-  // on the cell — both shipped in the markup. The column id is the cell's data-ccg-sort.
   function sortCells(head) {
     return findAll(head, '[data-ccg-sort]');
   }
@@ -1226,9 +1031,6 @@
     });
   }
 
-  // Exactly one column is sorted at a time: every other header says so explicitly rather
-  // than leaving the attribute off, so the state is never ambiguous. The arrow is a
-  // second, non-color signal of the same state.
   function renderSortState(head, sort) {
     sortCells(head).forEach(function (cell) {
       var sorted = Boolean(sort) && sort.column === cell.getAttribute('data-ccg-sort');
@@ -1246,8 +1048,6 @@
     }));
   }
 
-  // The initial-to-name key under the "Which practices" column. The glyph sentence above
-  // it is static copy in the markup; only the five names come from the data.
   function fillPracticeKey(list) {
     clear(list);
     practiceList().forEach(function (practice) {
@@ -1278,8 +1078,6 @@
     return (total === 1 ? '1 city matches ' : total + ' cities match ') + '“' + query + '”.';
   }
 
-  // Counted apart from the cities: they are rows, but they are not matches for a question
-  // about reported practices.
   function noDataRowsSentence(view) {
     if (!view.noData) return '';
     if (view.noData === 1) return '1 place with no data reported is listed below.';
@@ -1291,15 +1089,12 @@
     return column ? 'Sorted by ' + column.label + ', ' + sort.direction + '.' : '';
   }
 
-  // Pinned rows sit above the paged ones on every page, so the count the pager reports
-  // and the number of rows on screen differ by exactly this many.
   function pinnedRowsSentence(pinned) {
     if (!pinned || pinned.length === 0) return '';
     if (pinned.length === 1) return '1 pinned city is above them.';
     return pinned.length + ' pinned cities are above them.';
   }
 
-  // Counts, not records, so the sentence can be tested without building 25 rows.
   function noDataSentence(places) {
     if (!places || !places.total) return '';
 
@@ -1316,11 +1111,7 @@
     var paged = view.from !== 1 || view.to !== view.total;
 
     return [
-      // The surveyed count, not the row count: a place with no data is a row, but it is
-      // not a city that matched.
       matchSentence(query, view.surveyed),
-      // "15 cities match" already says how many there are; the range only earns its
-      // place when the reader is on one page of several.
       query && !paged ? '' : rangeSentence(view),
       noDataRowsSentence(view),
       pinnedRowsSentence(view.pinned),
@@ -1328,10 +1119,6 @@
     ].filter(Boolean).join(' ');
   }
 
-  // Reported under the controls, where it is visible to everyone: the map is above them
-  // on a phone, so this is the only place a reader learns it changed (D9). It names the
-  // count, not the filters — the controls are directly above it, and the map caption
-  // already describes the set in full.
   function resultStatusText(filters, matches, totalCities, places) {
     var query = normalizeQuery(filters.query);
     var others = practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all';
@@ -1342,7 +1129,6 @@
         '. Check a practice, choose a size, or search to narrow the map above and the table below.';
     }
 
-    // The verb follows the subject: one city matches, several cities match.
     function sentence(subject, plural) {
       var verb = plural ? ' match' : ' matches';
       var what = query ?
@@ -1361,7 +1147,6 @@
     ].filter(Boolean).join(' ');
   }
 
-  // The visible line above the table: what pinning did, and why a Pin button is disabled.
   function pinStatusText(pins, limit) {
     if (pins.length === 0) {
       return 'No cities are pinned. Pinning one keeps it at the top of the table and circles it on the map.';
@@ -1377,21 +1162,19 @@
     return text;
   }
 
-  // --------------------------- city not found (Task 09) ---------------------------
+  // ------------------------------- city not found ---------------------------
 
-  // 380KB of place names is not worth downloading for the readers who find their city on
-  // the first try, so the list is fetched on the first miss and never again.
   var LOOKUP_LIMIT = 8;
   var lookupRequest = null;
 
+  // An embed hosted at another path sets data-base-url on #ccg-dashboard to find us-cities.json.
   function lookupUrl() {
     var mount = document.getElementById('ccg-dashboard');
     var base = (mount && mount.getAttribute('data-base-url')) || '';
     return base ? base.replace(/\/+$/, '') + '/us-cities.json' : 'us-cities.json';
   }
 
-  // Resolves to the place list, or to null when it cannot be had — over file:// the fetch
-  // fails, and the fallback message is still worth showing without it.
+  // Fetched once, on first need. Resolves to null on failure (e.g. over file://).
   function loadCityLookup() {
     if (lookupRequest) return lookupRequest;
 
@@ -1408,11 +1191,10 @@
 
   function findPlaces(cities, query, stateNames) {
     if (!cities) return null;
-    var names = stateNames || {};
     var matches = [];
 
     Object.keys(cities).forEach(function (code) {
-      var haystackState = ' ' + code + ' ' + (names[code] || code);
+      var haystackState = ' ' + code + ' ' + (stateNames[code] || code);
       cities[code].forEach(function (city) {
         if (fold(city + haystackState).indexOf(query) !== -1) matches.push(city + ', ' + code);
       });
@@ -1428,10 +1210,6 @@
     return link;
   }
 
-  // An empty table has two very different causes, and saying the wrong one is a lie:
-  // the city may simply not be in the survey, or it may be sitting behind a filter the
-  // reader set (D11). This branch is the second one, and it never fetches the national
-  // list — the city we are talking about is right here in the data.
   function filteredOutText(filters, withoutFilters) {
     var query = normalizeQuery(filters.query);
 
@@ -1443,8 +1221,6 @@
       ' “' + query + '” once the filters are cleared.';
   }
 
-  // The block serves both empty states, so the parts that belong to one of them are
-  // shown or hidden here rather than being two blocks that can drift apart.
   function setNotFoundMode(region, mode) {
     findAll(region, '[data-ccg-not-found="missing-note"]').forEach(function (node) {
       node.hidden = mode !== 'missing';
@@ -1458,10 +1234,6 @@
     setNotFoundMode(region, 'filtered');
   }
 
-  // The region's two paragraphs are in the markup; only the first one's text and the
-  // lookup results below them are written here. `places` is null while the list is still
-  // loading or when it could not be loaded at all — the difference is that the second
-  // case never gets a list, so it gets the link.
   function renderNotFound(region, query, places, settled) {
     setNotFoundMode(region, 'missing');
     find(region, '[data-ccg-not-found="lede"]').textContent =
@@ -1514,8 +1286,7 @@
   // WIRING
   // ==========================================================================
 
-  // Elements are always built with createElement + textContent. Never assign
-  // innerHTML from data-derived strings.
+  // Always textContent. Never assign innerHTML from data-derived strings.
   function element(tagName, textContent) {
     var node = document.createElement(tagName);
     if (textContent) node.textContent = textContent;
@@ -1526,14 +1297,12 @@
     return total + (total === 1 ? ' city' : ' cities');
   }
 
-  // No submit button exists in either form, but Enter in a form still submits and would
-  // reload the host page.
+  // Enter in a form would otherwise reload the host page.
   function preventSubmit(event) {
     event.preventDefault();
   }
 
-  // The big numbers in the intro copy: each slot names the CCG_DATA.stats key it shows,
-  // so a stat can be moved or reworded in the markup without touching this file.
+  // Each [data-ccg-stat] slot names the CCG_DATA.stats key it shows.
   function fillStats(root) {
     findAll(root, '[data-ccg-stat]').forEach(function (slot) {
       var value = stats()[slot.getAttribute('data-ccg-stat')];
@@ -1541,28 +1310,18 @@
     });
   }
 
-  // Names and definitions are authored in scripts/lib/meta.mjs and baked into CCG_DATA,
-  // so the list is filled from there rather than duplicated in the markup.
   function fillPracticeDefinitions(list) {
     clear(list);
     practiceList().forEach(function (practice) {
       list.appendChild(element('dt', practice.name));
 
-      // The brief link rides inside the same <dd> as the definition it belongs to, one
-      // space after the sentence. Every brief's link text is the same "Learn more >>",
-      // so the practice's short name goes in the accessible name: five links all reading
-      // "Learn more" would be five links a reader cannot tell apart out of context.
       var definition = element('dd', practice.definition);
-      if (practice.linkTo && practice.linkToText) {
-        var link = element('a', practice.linkToText);
-        link.className = 'ccg-cta';
-        link.href = practice.linkTo;
-        if (practice.shortName) {
-          link.setAttribute('aria-label', 'Learn more about ' + practice.shortName);
-        }
-        definition.appendChild(document.createTextNode(' '));
-        definition.appendChild(link);
-      }
+      var link = element('a', practice.linkToText);
+      link.className = 'ccg-cta';
+      link.href = practice.linkTo;
+      link.setAttribute('aria-label', 'Learn more about ' + practice.shortName);
+      definition.appendChild(document.createTextNode(' '));
+      definition.appendChild(link);
       list.appendChild(definition);
     });
   }
@@ -1576,48 +1335,32 @@
     });
   }
 
-  // Option counts are read from CCG_DATA.stats, never written down here, so a data
-  // refresh moves them without a code change.
   function practiceFilterOptions(metaData, statsData) {
-    var byPractice = statsData.byPractice || {};
-
-    return (metaData.practices || []).map(function (practice) {
-      var reporting = (byPractice[practice.key] || {}).any || 0;
-      var count = cityCount(reporting);
+    return metaData.practices.map(function (practice) {
       return {
         value: practice.key,
         name: practice.name,
-        count: count,
-        // The two parts joined, which is what the row reads as to a screen reader.
-        label: practice.name + ' (' + count + ')'
+        count: cityCount(statsData.byPractice[practice.key].any)
       };
     });
   }
 
-  // Short labels here too (D20): the select, the table and the legend name a bucket the
-  // same way, so a reader never has to work out that ">10k-50k" is "10,001-50,000".
   function populationOptions(metaData, statsData) {
-    var byPopulation = statsData.byPopulation || {};
-    var short = metaData.populationBucketsShort || [];
     var options = [{ value: 'all', label: 'All sizes (' + cityCount(statsData.totalCities) + ')' }];
 
-    (metaData.populationBuckets || []).forEach(function (bucket, index) {
+    metaData.populationBuckets.forEach(function (bucket, index) {
       options.push({
         value: String(index),
-        label: (short[index] || bucket) + ' (' + cityCount(byPopulation[bucket]) + ')'
+        label: metaData.populationBucketsShort[index] + ' (' + cityCount(statsData.byPopulation[bucket]) + ')'
       });
     });
     return options;
   }
 
-  // Selects carry strings; the store carries 'all' or a number, so one place converts.
-  function toFilterValue(raw) {
+  function allOrNumber(raw) {
     return raw === 'all' ? 'all' : Number(raw);
   }
 
-  // One checkbox per practice, built from the data so the five names and their counts
-  // cannot drift from CCG_DATA. A fieldset with a legend is the native grouping — no
-  // role="group", no aria-labelledby.
   function fillPracticeCheckboxes(container, options, onChange) {
     clear(container);
 
@@ -1629,49 +1372,40 @@
       input.setAttribute('data-ccg-practice', option.value);
       input.addEventListener('change', onChange);
 
-      // The <label> is the row, so every pixel of it toggles the box — and `for` still
-      // names the control explicitly, rather than relying on the wrapping alone.
       var row = element('label');
       row.className = 'ccg-checkbox';
       row.setAttribute('for', input.id);
 
-      var name = element('span', option.name || option.label);
+      var name = element('span', option.name);
       name.className = 'ccg-checkbox__name';
 
       row.appendChild(input);
       row.appendChild(name);
 
-      if (option.count) {
-        var count = element('span', option.count);
-        count.className = 'ccg-checkbox__count';
-        row.appendChild(count);
-      }
+      var count = element('span', option.count);
+      count.className = 'ccg-checkbox__count';
+      row.appendChild(count);
       container.appendChild(row);
     });
   }
 
-  // Pure: what the closed control reports. One practice is named; several are counted,
-  // because five names do not fit on a summary line at 360px.
   function practiceSummaryText(keys, practices) {
     if (keys.length === 0) return 'Any';
     if (keys.length === 1) {
-      var found = (practices || []).filter(function (practice) {
+      return practices.filter(function (practice) {
         return practice.key === keys[0];
-      })[0];
-      return found ? found.shortName : '1 selected';
+      })[0].shortName;
     }
     return keys.length + ' selected';
   }
 
-  // <details> is a disclosure, not a menu: it does not close on Escape or on an outside
-  // click by itself, and a panel that overlays the page has to do both.
+  // <details> does not close on Escape or an outside click by itself.
   function wireDropdown(details) {
     var summary = find(details, 'summary');
 
     details.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape' || !details.open) return;
       details.open = false;
-      // Focus would otherwise land on the body, losing the reader's place entirely.
       summary.focus();
     });
 
@@ -1691,8 +1425,6 @@
       });
   }
 
-  // Every control on the page writes to one store, and the store is the only thing the
-  // map and the table read (D11).
   function wireFilters(root, store) {
     var records = dataset();
     var form = find(root, '[data-ccg-form="filters"]');
@@ -1712,11 +1444,9 @@
     form.addEventListener('submit', preventSubmit);
 
     population.addEventListener('change', function () {
-      store.set({ sizeBucket: toFilterValue(population.value) });
+      store.set({ sizeBucket: allOrNumber(population.value) });
     });
 
-    // One debounce for the whole search: the store is written once per settled input, so
-    // every subscriber — this status line, the map and the table — updates in one tick.
     var publish = debounce(function (value) {
       store.set({ query: value });
     }, SEARCH_DEBOUNCE_MS);
@@ -1731,8 +1461,7 @@
       });
       population.value = 'all';
       input.value = '';
-      // Pins survive a filter reset on purpose: they are the reader's own shortlist,
-      // not a filter.
+      // Pins survive a filter reset.
       store.set({ practices: [], sizeBucket: 'all', query: '' });
     }
 
@@ -1741,8 +1470,6 @@
       input.focus();
     });
 
-    // The "city not found" block owns a second copy of this control, because that is
-    // where a reader discovers the filters are the reason they see nothing.
     findAll(root, '[data-ccg-action="clear-filters"]').forEach(function (button) {
       if (button.closest('[data-ccg-form="filters"]')) return;
       button.addEventListener('click', clearAll);
@@ -1756,8 +1483,6 @@
         stats().totalCities,
         { shown: places.shown.length, total: places.total }
       );
-      // Driven from the store, not from the change event, so clearing the filters moves
-      // the summary too.
       practiceState.textContent = practiceSummaryText(practiceKeys(filters), meta().practices);
     }
 
@@ -1765,9 +1490,7 @@
     showStatus(store.get());
   }
 
-  // The map draws the matching cities plus every pinned city, whether or not the pinned
-  // ones match: a callout pointing at a bubble that is not there is worse than a bubble
-  // the filters would have hidden, and the caption says which is which.
+  // Pinned cities are drawn even when the filters would hide them.
   function drawnCities(records, filters) {
     var shown = applyFilters(records, filters);
     var shownIds = shown.map(function (record) {
@@ -1795,24 +1518,15 @@
       };
     }
 
-    // Written once. The caption explains the encoding, which never changes; what is
-    // currently shown is the status lines' job (2026-09-22). No aria-live here: this
-    // node has nothing to announce.
     var svg = fillMapFigure(figure, Object.assign(draw(state.filters.get()), {
-      caption: mapCaption(stats(), meta())
+      caption: mapCaption(stats())
     }));
 
-    // Only the bubbles and the callouts are rewritten, so nothing the reader is focused
-    // on is replaced.
     state.filters.subscribe(function (next) {
       var view = draw(next);
       renderMap(svg, view.cities, view.render);
       renderCallouts(find(figure, '.ccg-map'), svg, view.callouts, view.cities);
     });
-  }
-
-  function toRowsPerPage(raw) {
-    return raw === 'all' ? 'all' : Number(raw);
   }
 
   function wirePagination(root, tableState, onChange) {
@@ -1822,13 +1536,10 @@
     var next = find(node, '[data-ccg-page="next"]');
     var count = find(node, '.ccg-pagination__count');
 
-    // The starting page size is whichever <option> the markup marks selected.
-    tableState.perPage = toRowsPerPage(rows.value);
+    tableState.perPage = allOrNumber(rows.value);
 
     rows.addEventListener('change', function () {
-      tableState.perPage = toRowsPerPage(rows.value);
-      // Row 31 is on a different page at 100/page than it was at 30/page; page 1 is the
-      // only landing spot that means the same thing at every size.
+      tableState.perPage = allOrNumber(rows.value);
       tableState.page = 1;
       onChange(null);
     });
@@ -1849,8 +1560,7 @@
         previous.disabled = view.page <= 1;
         next.disabled = view.page >= view.pageCount;
       },
-      // Disabling the button under the pointer would drop focus to the body; the reader
-      // stays in the pagination controls by moving to the one still operable.
+      // Disabling the clicked button would drop focus, so move it to the other one.
       keepFocus: function (clicked) {
         if (!clicked || !clicked.disabled) return;
         (clicked === previous ? next : previous).focus();
@@ -1878,8 +1588,6 @@
 
     wireSortButtons(head, function (columnId) {
       tableState.sort = { column: columnId, direction: nextDirection(tableState.sort, columnId) };
-      // A different order makes "page 4" mean a different set of cities, so re-sorting
-      // starts from the top of the new order.
       tableState.page = 1;
       update();
     });
@@ -1889,9 +1597,6 @@
       pagination.keepFocus(clicked);
     });
 
-    // Pinning is a store write like any other, so the map redraws from the same event.
-    // Focus stays on the button the reader pressed: it is still there after the rebuild,
-    // in the pinned block at the top, and it now reads "Unpin".
     function togglePin(record) {
       var filters = state.filters.get();
       var pinned = pinnedIds(filters);
@@ -1911,29 +1616,21 @@
       if (button && !button.disabled) button.focus();
     }
 
-    // 376KB is not worth downloading for a reader who never searches, so the list arrives
-    // on the first search that could show it and the table re-renders when it lands.
     function ensurePlaces(filters) {
       if (state.places || state.placesRequested) return;
       if (normalizeQuery(filters.query).length < NO_DATA_MIN_QUERY) return;
       if (practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all') return;
 
-      // A flag, not an empty placeholder in `state.places`: the scan's cache key turns on
-      // whether the list is loaded, and an empty object reads as loaded — which would
-      // freeze the empty answer in place even after the real list arrived.
+      // A flag, not an empty state.places: the no-data cache key treats any object as loaded.
       state.placesRequested = true;
       loadCityLookup().then(function (cities) {
         if (!cities) return;
         state.places = cities;
-        // Republished rather than re-rendered here: the status line under the controls
-        // has to report the new rows too, and it is a different subscriber.
         state.filters.set({});
       });
     }
 
-    // Bumped on every render, so a promise that resolves after the table has moved on can
-    // tell that it has: the lookup and the place list share one request, and whichever
-    // callback lands second used to overwrite the first one's work.
+    // Lets a late lookup response tell that the table has re-rendered since.
     var renderToken = 0;
 
     function update() {
@@ -1942,7 +1639,6 @@
       tableState.places = currentNoData(tableState.filters);
 
       var view = tableView(records, tableState);
-      // The page can be clamped by the pipeline; the buttons must reflect where we landed.
       tableState.page = view.page;
 
       var atLimit = view.pinned.length >= MAX_PINS;
@@ -1959,9 +1655,6 @@
       pagination.update(view);
       pinStatus.textContent = pinStatusText(view.pinned, MAX_PINS);
 
-      // With no rows at all — nothing matching and nothing pinned — the table, its key
-      // and its pager go away together: a legend for a table that is not there is noise.
-      // A place with no data is still a row, so a search that finds one is not a miss.
       var empty = view.total === 0;
       var blank = empty && view.pinned.length === 0;
 
@@ -1977,8 +1670,6 @@
       showEmptyState(tableState.filters);
     }
 
-    // Two causes, two messages (D11). Only a genuine miss — a search that matches nothing
-    // with no other filter set — is worth downloading 380KB of place names for.
     function showEmptyState(filters) {
       var query = normalizeQuery(filters.query);
       var narrowedByControls = practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all';
@@ -1995,8 +1686,6 @@
       showNotFound(query);
     }
 
-    // The national list is fetched only here, on a miss. The status line is written once
-    // the lookup has settled, so it announces one complete outcome rather than two.
     function showNotFound(query) {
       var token = renderToken;
       renderNotFound(notFound, query, null, false);
@@ -2011,8 +1700,6 @@
 
     state.filters.subscribe(function (filters) {
       tableState.filters = filters;
-      // A narrower list makes the current page number mean something else, so a new
-      // search always starts at the top of its own results.
       tableState.page = 1;
       update();
     });
@@ -2032,28 +1719,23 @@
     var mount = document.getElementById('ccg-dashboard');
     if (!mount) return;
 
-    // This script fills markup it does not create. Without that markup — an embed that
-    // pasted the scripts but not the block — there is nothing to hydrate.
+    // The script fills existing markup; an embed without it has nothing to hydrate.
     if (!mount.querySelector('#ccg-table-container')) {
       console.warn('ccg-dashboard: embed markup not found inside #ccg-dashboard.');
       return;
     }
 
-    state.data = getData();
-    // The places with no survey data, once a search has asked for them (never on load).
+    state.data = window.CCG_DATA;
     state.places = null;
     state.placesRequested = false;
-    // Every filter and the pin list are shared; the page starts with the two cities Map 1
-    // used to call out already pinned, and drops any that a data refresh removed.
     state.filters = createStore(Object.assign({}, DEFAULT_FILTERS, {
+      // Drop any default pin a data refresh removed.
       pinned: DEFAULT_PINS.filter(function (id) {
         return dataset().some(function (record) {
           return record.id === id;
         });
       })
     }));
-    // Sort and page belong to the table alone (D11 shares everything else). `perPage` is
-    // read from the markup when the pager is wired, before anything renders.
     state.table = {
       filters: state.filters.get(),
       sort: DEFAULT_SORT,
@@ -2063,45 +1745,7 @@
     hydrate(mount);
   }
 
-  // `node --test` loads this file to exercise the pure helpers; there is no document
-  // and no CommonJS in the browser, so exactly one of these two branches ever runs.
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-      DEFAULT_FILTERS: DEFAULT_FILTERS,
-      DEFAULT_PINS: DEFAULT_PINS,
-      MAX_PINS: MAX_PINS,
-      applyFilters: applyFilters,
-      bubbleRadius: bubbleRadius,
-      countColor: countColor,
-      createStore: createStore,
-      filterRecords: filterRecords,
-      filteredOutText: filteredOutText,
-      findPlaces: findPlaces,
-      isPinned: isPinned,
-      isReported: isReported,
-      mapCaption: mapCaption,
-      nextDirection: nextDirection,
-      noDataMatches: noDataMatches,
-      noDataRecord: noDataRecord,
-      noDataSentence: noDataSentence,
-      noDataRowsSentence: noDataRowsSentence,
-      notFoundStatusText: notFoundStatusText,
-      pageCount: pageCount,
-      paginate: paginate,
-      pinFact: pinFact,
-      pinStatusText: pinStatusText,
-      pinnedRecords: pinnedRecords,
-      placeCallout: placeCallout,
-      legendBucketLabel: legendBucketLabel,
-      populationOptions: populationOptions,
-      practiceFilterOptions: practiceFilterOptions,
-      practiceSummaryText: practiceSummaryText,
-      resultStatusText: resultStatusText,
-      sortRecords: sortRecords,
-      tableStatusText: tableStatusText,
-      tableView: tableView
-    };
-  } else if (document.readyState === 'loading') {
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();

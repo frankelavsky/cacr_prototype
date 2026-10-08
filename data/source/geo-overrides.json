@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "Manual resolutions for dataset cities the gazetteer matcher cannot resolve on its own.",
+    "Keys are dataset record ids (city--state). A value is either { geoid } pointing at a row",
+    "in the places gazetteer, or { lat, lon } for a place the places file does not contain.",
+    "The build FAILS listing every unresolved city, so this file cannot drift out of date.",
+    "Every entry needs a 'why' — no silent guesses."
+  ],
+  "athens--ga": {
+    "geoid": "1303440",
+    "why": "Consolidated city-county; the gazetteer name is 'Athens-Clarke County unified government (balance)'."
+  },
+  "boise--id": {
+    "geoid": "1608830",
+    "why": "The city's legal name is 'Boise City'; the survey uses the everyday name 'Boise'."
+  },
+  "nashville--tn": {
+    "geoid": "4752006",
+    "why": "Consolidated city-county; the gazetteer name is 'Nashville-Davidson metropolitan government (balance)'."
+  },
+  "new-gloucester--me": {
+    "lat": 43.957508,
+    "lon": -70.296011,
+    "why": "Maine towns are county subdivisions, not Census 'places'. Coordinates are the internal point of 'New Gloucester town' (GEOID 2300548820) from the 2025 county-subdivision gazetteer.",
+    "confirm": "This city also has no region or population_size in the survey file."
+  },
+  "oakwood--oh": {
+    "geoid": "3957764",
+    "why": "Ohio has three Oakwoods. Picked Oakwood city in Montgomery County (Dayton area, ~9,500 residents) over the two much smaller villages in Cuyahoga and Paulding counties.",
+    "confirm": "All three are under 10,000, so the survey's population bucket does not disambiguate. Worth confirming with NLC which Oakwood responded."
+  }
+}
