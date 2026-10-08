@@ -23157,41 +23157,41 @@ window.CCG_DATA = {
    {
     "definition": "Children as active participants in decisions.",
     "key": "council",
-    "name": "Youth councils & advisory boards",
-    "linkToText": "Learn more >>",
     "linkTo": "https://www.unicefusa.org/sites/default/files/2026-09/Youth%20Councils%20Brief_8.31.26.pdf",
+    "linkToText": "Learn more >>",
+    "name": "Youth councils & advisory boards",
     "shortName": "Youth councils"
    },
    {
     "definition": "Cross-department coordination for children's services.",
     "key": "cabinet",
-    "name": "Children's cabinets",
-    "linkToText": "Learn more >>",
     "linkTo": "https://www.unicefusa.org/sites/default/files/2026-09/Children%27s%20Cabinets%20Brief_8.31.26.pdf",
+    "linkToText": "Learn more >>",
+    "name": "Children's cabinets",
     "shortName": "Cabinets"
    },
    {
     "definition": "Assessing how a decision affects children before passage.",
     "key": "impact",
-    "name": "Child impact statements",
-    "linkToText": "Learn more >>",
     "linkTo": "https://www.unicefusa.org/sites/default/files/2026-09/Child%20Impact%20Statements%20Brief_8.31.26.pdf",
+    "linkToText": "Learn more >>",
+    "name": "Child impact statements",
     "shortName": "Impact statements"
    },
    {
     "definition": "Independent representation of children.",
     "key": "ombuds",
-    "name": "Ombuds offices / independent advocates",
-    "linkToText": "Learn more >>",
     "linkTo": "https://www.unicefusa.org/sites/default/files/2026-09/Youth%20Ombuds%20Offices%20Brief_8.31.26.pdf",
+    "linkToText": "Learn more >>",
+    "name": "Ombuds offices / independent advocates",
     "shortName": "Ombuds offices"
    },
    {
     "definition": "Transparent assessment of investment in children.",
     "key": "budget",
-    "name": "Children's budgeting",
-    "linkToText": "Learn more >>",
     "linkTo": "https://www.unicefusa.org/sites/default/files/2026-09/Children%27s%20Budgeting%20Brief_8.31.26.pdf",
+    "linkToText": "Learn more >>",
+    "name": "Children's budgeting",
     "shortName": "Budgeting"
    }
   ],
