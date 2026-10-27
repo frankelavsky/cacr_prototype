@@ -8,76 +8,12 @@
 </head>
 <body>
 
-<!--
-  Everything from <div id="ccg-dashboard"> to its closing tag is the embed markup: it is
-  the page's static structure and all of its author-written copy. ccg-dashboard.js does
-  not create any of it — it fills the empty slots below with values from CCG_DATA and
-  wires the controls up. Slots are marked either by an id, or by a data-ccg-* attribute.
--->
 <div id="ccg-dashboard">
-
-  <!-- Commented out: the host page supplies all copy above the map and below the table. -->
-  <!-- <a class="ccg-skip-link" href="#ccg-table-heading">Skip to the data table</a>
-
-  <header class="ccg-section">
-    <h1>Child-Centered Governance in Action</h1>
-    <p class="ccg-subtitle">Explore how communities across the country are putting child-centered governance strategies into practice.</p>
-  </header> -->
 
   <main>
 
-    <!-- Kept deliberately short: on a 360px viewport Map 1 has to start above the fold. -->
-    <!-- <section class="ccg-section" aria-labelledby="ccg-intro-heading"> -->
-      <!-- <h2 id="ccg-intro-heading">[FILLER: intro heading]</h2> -->
-      <!-- <p>Child-centered governance (CCG) gives local governments practical ways to consider children's needs and perspectives in decision-making, policies and public investments. The National League of Cities and UNICEF USA surveyed <span data-ccg-stat="totalCities"></span> municipalities nationwide to understand where and how communities are adopting and implementing child-centered governance practices.</p> -->
-
-      <!-- <div class="ccg-stat">
-        <p class="ccg-stat__number"><span data-ccg-stat="citiesWithAnyPractice_pct"></span>%</p>
-        <p class="ccg-stat__label">of cities report at least one <br>of the five practices</p>
-      </div> -->
-
-      <!-- <h2 id="ccg-intro-heading">Child-centered governance is bipartisan</h2>
-      <p>CCG practices cross party lines and were equally found in both Democrat and Republican-led states.</p> -->
-
-      <!-- The adoption number leads and the gap follows it as a note, so the section
-           reads as momentum rather than deficiency (feedback 2026-08-31, row 6). -->
-      <!-- <div class="ccg-stat">
-        <p class="ccg-stat__number"><span data-ccg-stat="citiesWithAnyPractice_pct"></span>%</p>
-        <p class="ccg-stat__label">[FILLER: of cities report at least one of the five practices]</p>
-        <p class="ccg-stat__note">[FILLER: about 1 in 5 (<span data-ccg-stat="citiesWithNoPractices_pct"></span>%) report none of them yet]</p>
-      </div> -->
-
-      <!-- Row 7: the impact finding (CCG strategies and young people out of school and
-           out of work) is with a journal; UNICEF USA supplies the number and its source.
-           The slot is here so the layout is right before the copy lands. -->
-      <!-- <div class="ccg-stat ccg-stat--pending">
-        <p class="ccg-stat__number">[FILLER: impact number]</p>
-        <p class="ccg-stat__label">[FILLER: one sentence on what child-centered governance changes for young people, with its source]</p>
-      </div> -->
-    <!-- </section>
-
-      <p></p>
-    <section class="ccg-section" aria-labelledby="ccg-practices-heading">
-      <h2 id="ccg-practices-heading">The five CCG practices</h2>
-      <p>Child-centered governance can take different forms depending on a community’s needs and context. The survey focused on five practices that help local governments incorporate children’s needs and perspectives into governance:</p> -->
-      <!-- Names and definitions are authored in data/source/practices.json and baked into CCG_DATA. -->
-      <!-- <dl class="ccg-practice-list" data-ccg-practice-definitions></dl>
-    </section> -->
-
-    <!--
-      One map. It is a display of whatever the controls below it are showing: the reader
-      never operates it, and it is the first thing on the page at 360px.
-    -->
     <section class="ccg-section ccg-section--wide">
-      <!-- <h2 id="ccg-map-heading">Explore Child-Centered Governance in the US</h2>
-      <p>See how communities around the country are implementing Child-Centered Governance strategies. Searching your city/state or filtering by size or number of practices will all narrow both the map and the table below.</p> -->
 
-      <!--
-        The graphic — legend, map, callouts — is one aria-hidden block. Everything it
-        encodes is stated in words in the figcaption, which is the accessible alternative.
-        aria-label is a short name for the figure, so the figcaption is not also read as
-        its label.
-      -->
       <figure class="ccg-figure" id="ccg-map" aria-label="Map of the surveyed cities">
         <div class="ccg-figure__graphic" aria-hidden="true">
           <div class="ccg-legend">
@@ -89,9 +25,6 @@
                 <li class="ccg-legend__item" data-ccg-bucket="2"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
                 <li class="ccg-legend__item" data-ccg-bucket="3"><span class="ccg-legend__dot"></span><span class="ccg-legend__label"></span></li>
               </ul>
-              <!-- The three cities that reported no population size are drawn at the
-                   smallest radius, so the smallest entry carries the asterisk (D5: they
-                   are still "No response" in the table, never folded into "<10k"). -->
               <p class="ccg-legend__note">*Also includes Not Reported</p>
             </div>
             <div class="ccg-legend__group ccg-legend__group--count">
@@ -108,12 +41,6 @@
           </div>
 
           <div class="ccg-map">
-            <!--
-              viewBox is re-read from CCG_DATA.basemap at run time; the value here is
-              today's us-atlas box, so the box is right before the script runs.
-              The three paths and the two layers are drawn into by ccg-dashboard.js.
-              Pin callout labels are appended after the svg, positioned over it.
-            -->
             <svg class="ccg-map__svg" viewBox="0 0 975 610" aria-hidden="true" focusable="false">
               <path class="ccg-map__land"></path>
               <path class="ccg-map__states"></path>
@@ -123,40 +50,21 @@
             </svg>
           </div>
         </div>
-        <!-- Static: it says what a bubble means and which cities the projection leaves
-             out. What is currently shown is reported by the status line under the
-             controls and by the table's own status, so this is not a live region. -->
         <figcaption class="ccg-figure__caption" id="ccg-map-caption"></figcaption>
       </figure>
     </section>
 
-    <!--
-      Every control lives here: the practice checkboxes, the size select and the search
-      all narrow the same set, shown on the map above and in the table below (D11). The
-      block sits directly above the table it drives, with nothing between them (D9).
-    -->
     <section class="ccg-section ccg-section--wide" aria-labelledby="ccg-filters-heading">
       <h2 id="ccg-filters-heading">Find your city</h2>
       <p>Explore the <span data-ccg-stat="totalCities" data-ccg-round-down></span> municipalities that shared their child-centered governance structures with us. Search by location, population size or CCG practice.</p>
       <p>Type a city or state to narrow the map above and the table below.</p>
 
-      <!-- No submit button exists, but Enter in a form still submits and would reload the
-           host page; the script prevents that. Every option list is filled from the data,
-           so the counts in the labels move with a data refresh. -->
       <form class="ccg-controls" data-ccg-form="filters">
         <div class="ccg-field">
           <label for="ccg-filter-population">City population</label>
           <select id="ccg-filter-population" name="ccg-filter-population"></select>
         </div>
 
-        <!--
-          Built to read as the select's twin: label above, one box of the same height
-          below it, and the current value inside that box. A disclosure, not a custom
-          listbox — <details>/<summary> opens with Enter or Space and is announced as a
-          collapsed button with no ARIA at all. The one ARIA attribute here is the pair
-          of ids that names the summary "Practices reported, <value>", the way a select
-          announces its label and its selected option.
-        -->
         <div class="ccg-field">
           <span class="ccg-label" id="ccg-practice-label">Practices reported</span>
 
@@ -166,10 +74,6 @@
             </summary>
 
             <div class="ccg-dropdown__panel">
-              <!-- The fieldset is still the native grouping for the checkboxes; its legend
-                   is hidden because the visible label above the control already says it.
-                   The filter is inclusive: checking three asks for cities reporting at
-                   least those three, not only those three. -->
               <fieldset class="ccg-fieldset" aria-describedby="ccg-practice-note">
                 <legend class="ccg-visually-hidden">Practices reported</legend>
                 <p class="ccg-fieldset__note" id="ccg-practice-note">Cities that report every practice you check. They may report others too.</p>
@@ -191,37 +95,19 @@
 
       <p class="ccg-search-status" id="ccg-result-status"></p>
 
-      <!--
-        Moved out of the page footer (2026-09-22). On a phone the closing section was
-        unreachably far down; collapsed here it is one line above the table, and the
-        search still touches the table when it is shut. Partial delivery of D12 — the
-        documents and downloads half is still Task 17.
-      -->
-      
     </section>
 
     <section class="ccg-section ccg-section--wide" aria-label="Survey data">
-      
 
-      <!-- Names the pinned cities and, at the limit, says why a Pin button is disabled.
-           Visible to everyone, and the description for those disabled buttons. -->
-
-      <!-- Explains a purely visual encoding — every cell already carries the same facts
-           in words — so it is hidden from the accessibility tree rather than read twice. -->
       <div class="ccg-table-legend" aria-hidden="true">
         <p>In “Which practices”: ● reported, ○ not reported.</p>
         <ul class="ccg-table-legend__items" data-ccg-practice-key></ul>
       </div>
 
-      <!-- Focusable and labelled, so a keyboard user can scroll the table sideways on a
-           narrow screen without a pointer. -->
       <div class="ccg-table-container" id="ccg-table-container" tabindex="0" role="region" aria-labelledby="ccg-table-heading">
         <table class="ccg-table">
           <caption class="ccg-table__caption"><h3  id="ccg-table-heading" tabindex="-1">Surveyed cities and their child-centered governance practices</h3><p><i><a href="#">Download the excel sheet</a> of data to dive deeper. </i></p></caption>
           <thead>
-            <!-- APG sortable-table pattern: the button is inside the header cell,
-                 aria-sort lives on the cell, and the arrow is a second, non-color signal
-                 of the same state. ccg-dashboard.js owns aria-sort and the arrow glyph. -->
             <tr>
               <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--city" data-ccg-sort="city" aria-sort="none">
                 <button type="button" class="ccg-table__sort"><span>City</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
@@ -235,8 +121,6 @@
               <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--ccgCount" data-ccg-sort="ccgCount" aria-sort="none">
                 <button type="button" class="ccg-table__sort" aria-label="Number of practices"><span>#</span><span class="ccg-table__sort-arrow" aria-hidden="true">↕</span></button>
               </th>
-              <!-- Five fixed-width slots holding the practice initials, so each glyph in
-                   a row sits under its own letter. Filled from the data. -->
               <th scope="col" class="ccg-table__head-cell ccg-table__head-cell--marks">
                 <span class="ccg-marks" aria-hidden="true" data-ccg-practice-initials></span>
                 <span class="ccg-visually-hidden">Which practices</span>
@@ -250,8 +134,6 @@
         </table>
       </div>
 
-      <!-- Two empty states share this block: the city is not in the survey, or the
-           reader's own filters are hiding it. The script shows the half that applies. -->
       <div class="ccg-not-found" hidden>
         <p data-ccg-not-found="lede"></p>
         <p data-ccg-not-found="missing-note">Help contribute!</p>
@@ -272,8 +154,6 @@
             <option value="all">All</option>
           </select>
         </div>
-        <!-- Previous/Next are disabled at the bounds rather than hidden, so the reader
-             can see that the control exists and where they are in the list. -->
         <div class="ccg-pagination__pages">
           <button type="button" class="ccg-button ccg-button--small" data-ccg-page="previous">Previous</button>
           <p class="ccg-pagination__count"></p>
@@ -285,26 +165,7 @@
       <p class="ccg-visually-hidden" id="ccg-table-status"></p>
     </section>
 
-    <!-- <section class="ccg-section" aria-labelledby="ccg-involved-heading">
-      <h2 id="ccg-involved-heading">Ready to Bring Child-Centered Governance to Your Community?</h2>
-      <p>Explore our resources and keep learning about the child-centered governance structures in your community! Interested to see your city on this map? <a href="#">Sign up</a> to be the first to know when we’ll be collecting more city data!</p>
-    </section>
-    <section class="ccg-section" aria-labelledby="ccg-about-heading">
-      <h2 id="ccg-about-heading">About this data</h2>
-
-      <div class="ccg-about__body">
-        <p>The dashboard presents self-reported responses from <span data-ccg-stat="totalCities"></span> municipalities participating in a National League of Cities and UNICEF USA survey. Responses reflect practices municipalities reported as in practice, in planning or not currently active at the time of the survey. The findings represent participating municipalities and should not be interpreted as estimates for all U.S. municipalities. Survey responses have not necessarily been independently verified. Learn more about the survey methodology [here]</p>
-
-        <p>This is self-reported data. If you see incorrect data or would like to update your city email <a href="mailto:research@unicefusa.org">research@unicefusa.org</a>.</p>
-      </div>
-    </section>
-    <section class="ccg-section" aria-labelledby="ccg-learn-heading">
-      <h2 id="ccg-learn-heading">Keep Exploring</h2>
-      <p><a href="#">Research Library</a>	|	<a href="#">CCG Homepage</a>	|	<a href="#">Sign up</a></p>
-    </section> -->
-
   </main>
-
 
 </div>
 
