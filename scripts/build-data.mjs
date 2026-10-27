@@ -457,6 +457,105 @@ function geocode(records, places, overrides) {
   return { methodCounts, outsideProjection, surveyedGeoids };
 }
 
+// ---------------------------------------------------------------------- packing
+
+const BUBBLE_RADII = [3, 4.5, 6.5, 9.5];
+const LARGE_POPULATION_INDEX = 2;
+const LARGE_OVERLAP = 0.15;
+const SMALL_GAP = 0.5;
+const PACK_ITERATIONS = 300;
+const PACK_PULL = 0.1;
+const RADIUS_SCALES = [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7];
+const MAX_SHIFT = 20;
+
+function minDistance(a, b) {
+  const touching = a.r + b.r;
+  return a.large && b.large ? touching * (1 - LARGE_OVERLAP) : touching + SMALL_GAP;
+}
+
+function separate(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  if (Math.abs(dx) > a.r + b.r + SMALL_GAP) return false;
+  const distance = Math.hypot(dx, dy);
+  const overlap = minDistance(a, b) - distance;
+  if (overlap <= 0) return false;
+
+  const [ux, uy] = distance ? [dx / distance, dy / distance] : [1, 0];
+  const aShare = b.r ** 2 / (a.r ** 2 + b.r ** 2);
+  a.x -= ux * overlap * aShare;
+  a.y -= uy * overlap * aShare;
+  b.x += ux * overlap * (1 - aShare);
+  b.y += uy * overlap * (1 - aShare);
+  return true;
+}
+
+function separateAll(nodes) {
+  let moved = false;
+  for (let i = 0; i < nodes.length; i += 1) {
+    for (let j = i + 1; j < nodes.length; j += 1) moved = separate(nodes[i], nodes[j]) || moved;
+  }
+  return moved;
+}
+
+function pack(records, radiusScale) {
+  const nodes = records
+    .filter((record) => record.x !== null)
+    .map((record) => ({
+      record,
+      x: record.x,
+      y: record.y,
+      r: (BUBBLE_RADII[record.populationIndex] ?? BUBBLE_RADII[0]) * radiusScale,
+      large: record.populationIndex >= LARGE_POPULATION_INDEX,
+    }));
+
+  for (let step = 0; step < PACK_ITERATIONS; step += 1) {
+    const pull = PACK_PULL * (1 - step / PACK_ITERATIONS);
+    for (const node of nodes) {
+      node.x += (node.record.x - node.x) * pull;
+      node.y += (node.record.y - node.y) * pull;
+    }
+    separateAll(nodes);
+  }
+  for (let step = 0; step < PACK_ITERATIONS; step += 1) {
+    if (!separateAll(nodes)) break;
+  }
+  return nodes;
+}
+
+function packStats(nodes) {
+  const shifts = nodes
+    .map((node) => Math.hypot(node.x - node.record.x, node.y - node.record.y))
+    .sort((a, b) => a - b);
+  let tooClose = 0;
+  for (let i = 0; i < nodes.length; i += 1) {
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      const distance = Math.hypot(nodes[j].x - nodes[i].x, nodes[j].y - nodes[i].y);
+      if (distance < minDistance(nodes[i], nodes[j]) - 0.01) tooClose += 1;
+    }
+  }
+  return { median: shifts[Math.floor(shifts.length / 2)], max: shifts[shifts.length - 1], tooClose };
+}
+
+function packToFit(records) {
+  for (const radiusScale of RADIUS_SCALES) {
+    const nodes = pack(records, radiusScale);
+    const stats = packStats(nodes);
+    if (stats.max <= MAX_SHIFT || radiusScale === RADIUS_SCALES.at(-1)) {
+      for (const record of records) {
+        record.packedX = null;
+        record.packedY = null;
+      }
+      for (const node of nodes) {
+        node.record.packedX = round1(node.x);
+        node.record.packedY = round1(node.y);
+      }
+      const bubbleRadii = BUBBLE_RADII.map((radius) => Math.round(radius * radiusScale * 100) / 100);
+      return { radiusScale, bubbleRadii, stats };
+    }
+  }
+}
+
 function buildBasemap(topology) {
   const toPath = geoPath(null);
   const roundPath = (d) => toPath(d).replace(/-?\d+\.\d+/g, (n) => String(round1(Number(n))));
@@ -675,12 +774,13 @@ function main() {
   );
   const { methodCounts, outsideProjection, surveyedGeoids } = geocode(records, places, overrides);
 
+  const packing = packToFit(records);
   const stats = buildStats(records);
   stats.citiesOnMap = records.filter((record) => record.x !== null).length;
   stats.citiesNotOnMap = outsideProjection;
 
   const data = {
-    basemap: buildBasemap(readJson('states-albers-10m.json')),
+    basemap: { ...buildBasemap(readJson('states-albers-10m.json')), bubbleRadii: packing.bubbleRadii },
     dataset: records,
     stats,
     meta: buildMeta(practices),
@@ -703,6 +803,10 @@ function main() {
     `Map: ${stats.citiesOnMap} of ${stats.totalCities} placed ` +
       `(${methodCounts.exact} exact, ${methodCounts.incorporated} incorporated, ${methodCounts.override} override)` +
       (outsideProjection.length ? `; not shown: ${outsideProjection.join(', ')}` : '')
+  );
+  console.log(
+    `Packed bubbles: ${packing.radiusScale}× radius, cities moved median ${packing.stats.median.toFixed(1)}, ` +
+      `max ${packing.stats.max.toFixed(1)} map units; ${packing.stats.tooClose} pairs still too close`
   );
   console.log(`Cities per practice count: ${[0, 1, 2, 3, 4, 5].map((n) => `${n}→${stats.byCcgCount[n]}`).join('  ')}`);
 

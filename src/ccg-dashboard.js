@@ -25,9 +25,9 @@
 
   var state = {};
 
-  var DEFAULT_PINS = ['coffman-cove--ak', 'nashville--tn'];
+  var DEFAULT_PINS = ['coffman-cove--ak', 'baltimore--md'];
 
-  var MAX_PINS = 4;
+  var MAX_PINS = 5;
 
   var DEFAULT_FILTERS = {
     practices: [],
@@ -114,6 +114,14 @@
     return pinnedIds(filters).indexOf(record.id) !== -1;
   }
 
+  function toggledPins(filters, id) {
+    var pinned = pinnedIds(filters);
+    if (pinned.indexOf(id) === -1) return pinned.concat([id]).slice(0, MAX_PINS);
+    return pinned.filter(function (pinnedId) {
+      return pinnedId !== id;
+    });
+  }
+
   function pinnedRecords(records, filters) {
     return pinnedIds(filters)
       .map(function (id) {
@@ -195,19 +203,38 @@
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
 
-  var BUBBLE_RADII = [3, 4.5, 6.5, 9.5];
-
-  var UNKNOWN_POPULATION_RADIUS = 3;
+  var USE_PACKED_POSITIONS = true;
 
   var COUNT_COLORS = ['#1f2f3f', '#364c61', '#4f6b86', '#698cad', '#85aed5', '#a1d2ff'];
 
   var ANNOTATION_RING_RADIUS = 13;
+
+  var PREVIEW_GRACE_MS = 300;
+
+  var RETICLE_SIZE = 48;
+  var CROSSHAIR_RADIUS = 3;
+  var TARGET_RADIUS = 22;
+  var RETICLE_PARTS = [
+    { r: TARGET_RADIUS, width: 4, className: 'is-outline' },
+    { r: TARGET_RADIUS, width: 2, className: '' },
+    { r: CROSSHAIR_RADIUS, width: 7, className: 'is-glow' },
+    { r: CROSSHAIR_RADIUS, width: 3, className: 'is-outline' },
+    { r: CROSSHAIR_RADIUS, width: 1, className: '' }
+  ];
 
   var PIN_LABEL_WIDTH_PCT = 18;
   var PIN_LABEL_HEIGHT = 80;
   var PIN_LABEL_GAP = 6;
   var PIN_BUBBLE_PADDING = 4;
   var PIN_LEADER_CLEARANCE = 5;
+
+  var CALLOUT_COSTS = {
+    overlappedLabel: 1000,
+    crossedLeader: 500,
+    coveredCity: 10,
+    crowdedLeader: 2,
+    leaderLength: 0.05
+  };
 
   var PIN_DIRECTIONS = [
     { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 },
@@ -217,8 +244,14 @@
   var PIN_DISTANCES = [26, 45, 70, 105, 150, 205, 270];
 
   function bubbleRadius(populationIndex) {
-    var radius = BUBBLE_RADII[populationIndex];
-    return typeof radius === 'number' ? radius : UNKNOWN_POPULATION_RADIUS;
+    var radii = basemap().bubbleRadii;
+    return radii[populationIndex] || radii[0];
+  }
+
+  function usePackedPosition(record) {
+    if (typeof record.packedX !== 'number') return;
+    record.x = record.packedX;
+    record.y = record.packedY;
   }
 
   function countColor(ccgCount) {
@@ -253,6 +286,7 @@
   function bubble(record, radius, highlighted) {
     var circle = svgElement('circle');
     circle.setAttribute('class', 'ccg-map__bubble' + (highlighted ? ' is-highlighted' : ''));
+    circle.setAttribute('data-ccg-id', record.id);
     circle.setAttribute('cx', record.x);
     circle.setAttribute('cy', record.y);
     circle.setAttribute('r', radius);
@@ -348,6 +382,25 @@
     return Math.hypot(point.x - (from.x + t * dx), point.y - (from.y + t * dy));
   }
 
+  function segmentsCross(a, b, c, d) {
+    function side(p, q, r) {
+      return (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    }
+    return side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+  }
+
+  function segmentCrossesBox(from, to, box) {
+    var corners = [
+      { x: box.left, y: box.top },
+      { x: box.left + box.width, y: box.top },
+      { x: box.left + box.width, y: box.top + box.height },
+      { x: box.left, y: box.top + box.height }
+    ];
+    return corners.some(function (corner, i) {
+      return segmentsCross(from, to, corner, corners[(i + 1) % 4]);
+    });
+  }
+
   function leaderAnchor(box, record) {
     return {
       x: Math.max(box.left, Math.min(record.x, box.left + box.width)),
@@ -377,51 +430,92 @@
 
   var PIN_SCAN_STEP = 12;
 
+  // A hint makes the label taller than the box it was placed by; it grows away from the city.
   function calloutSpot(box, record, geometry) {
+    var cityBelow = record.y > box.top + box.height;
     return {
       box: box,
       leader: leaderAnchor(box, record),
       left: (box.left / geometry.width) * 100,
-      top: (box.top / geometry.height) * 100,
+      top: cityBelow ? null : (box.top / geometry.height) * 100,
+      bottom: cityBelow ? ((geometry.height - box.top - box.height) / geometry.height) * 100 : null,
       width: PIN_LABEL_WIDTH_PCT
     };
   }
 
-  function boxFits(box, record, cities, placed, clean) {
-    if (boxCovers(box, record, 0)) return false;
-    if (coversAnyCity(box, cities)) return false;
-    if (overlapsPlaced(box, placed)) return false;
-    if (!clean) return true;
-    return !leaderCrossesCity(leaderAnchor(box, record), record, cities);
-  }
-
-  function scanForCallout(record, cities, placed, geometry, size, clean) {
+  function calloutCandidates(record, size, geometry) {
     var candidates = [];
-
+    PIN_DISTANCES.forEach(function (distance) {
+      PIN_DIRECTIONS.forEach(function (direction) {
+        candidates.push(calloutBox(record, direction, distance, size, geometry));
+      });
+    });
     for (var left = 0; left <= geometry.width - size.width; left += PIN_SCAN_STEP) {
       for (var top = 0; top <= geometry.height - size.height; top += PIN_SCAN_STEP) {
-        candidates.push({
-          left: left,
-          top: top,
-          width: size.width,
-          height: size.height,
-          distance: Math.hypot(left + size.width / 2 - record.x, top + size.height / 2 - record.y)
-        });
+        candidates.push({ left: left, top: top, width: size.width, height: size.height });
       }
     }
+    return candidates;
+  }
 
-    candidates.sort(function (a, b) {
-      return a.distance - b.distance;
+  function leaderCrowdsCity(anchor, record, city) {
+    if (Math.hypot(city.x - record.x, city.y - record.y) <= ANNOTATION_RING_RADIUS) return false;
+    return distanceToSegment(city, anchor, record) < PIN_LEADER_CLEARANCE;
+  }
+
+  function calloutCost(box, record, cities, placed, limit) {
+    var anchor = leaderAnchor(box, record);
+    var cost = Math.hypot(anchor.x - record.x, anchor.y - record.y) * CALLOUT_COSTS.leaderLength;
+    if (boxCovers(box, record, PIN_BUBBLE_PADDING)) cost += CALLOUT_COSTS.overlappedLabel;
+
+    placed.forEach(function (other) {
+      if (boxesOverlap(box, other.box, PIN_LABEL_GAP)) cost += CALLOUT_COSTS.overlappedLabel;
+      if (segmentsCross(anchor, record, other.anchor, other.record) ||
+        segmentCrossesBox(anchor, record, other.box) ||
+        segmentCrossesBox(other.anchor, other.record, box)) {
+        cost += CALLOUT_COSTS.crossedLeader;
+      }
     });
 
-    for (var i = 0; i < candidates.length; i += 1) {
-      if (boxFits(candidates[i], record, cities, placed, clean)) return candidates[i];
+    var reach = Math.max(PIN_BUBBLE_PADDING, PIN_LEADER_CLEARANCE);
+    var area = {
+      left: Math.min(box.left, record.x) - reach,
+      right: Math.max(box.left + box.width, record.x) + reach,
+      top: Math.min(box.top, record.y) - reach,
+      bottom: Math.max(box.top + box.height, record.y) + reach
+    };
+
+    for (var i = 0; i < cities.length && cost < limit; i += 1) {
+      var city = cities[i];
+      if (!hasCoordinates(city) || city.id === record.id) continue;
+      if (city.x < area.left || city.x > area.right || city.y < area.top || city.y > area.bottom) continue;
+      if (boxCovers(box, city, PIN_BUBBLE_PADDING)) cost += CALLOUT_COSTS.coveredCity;
+      else if (leaderCrowdsCity(anchor, record, city)) cost += CALLOUT_COSTS.crowdedLeader;
     }
-    return null;
+    return cost;
+  }
+
+  // Every candidate is scored and the cheapest wins, so a city on the map always gets a callout.
+  function placeCallout(record, cities, placed, geometry, height) {
+    var size = {
+      width: (PIN_LABEL_WIDTH_PCT / 100) * geometry.width,
+      height: height
+    };
+    var best = null;
+    var bestCost = Infinity;
+
+    calloutCandidates(record, size, geometry).forEach(function (box) {
+      var cost = calloutCost(box, record, cities, placed, bestCost);
+      if (cost < bestCost) {
+        best = box;
+        bestCost = cost;
+      }
+    });
+    return calloutSpot(best, record, geometry);
   }
 
   function labelHeight(container, svg, record, geometry) {
-    var probe = calloutLabel(record, { left: 0, top: 0, width: PIN_LABEL_WIDTH_PCT });
+    var probe = calloutLabel(record, { left: 0, top: 0, width: PIN_LABEL_WIDTH_PCT }, null);
     container.appendChild(probe);
     var pixels = probe.offsetHeight;
     container.removeChild(probe);
@@ -429,51 +523,15 @@
     return pixels && scale ? pixels / scale : PIN_LABEL_HEIGHT;
   }
 
-  function placeCallout(record, cities, placed, geometry, height) {
-    var size = {
-      width: (PIN_LABEL_WIDTH_PCT / 100) * geometry.width,
-      height: height
-    };
-
-    for (var d = 0; d < PIN_DISTANCES.length; d += 1) {
-      for (var i = 0; i < PIN_DIRECTIONS.length; i += 1) {
-        var box = calloutBox(record, PIN_DIRECTIONS[i], PIN_DISTANCES[d], size, geometry);
-        if (boxFits(box, record, cities, placed, true)) return calloutSpot(box, record, geometry);
-      }
-    }
-
-    var found = scanForCallout(record, cities, placed, geometry, size, true) ||
-      scanForCallout(record, cities, placed, geometry, size, false);
-    return found ? calloutSpot(found, record, geometry) : null;
-  }
-
-  function coversAnyCity(box, cities) {
-    return cities.some(function (city) {
-      return hasCoordinates(city) && boxCovers(box, city, PIN_BUBBLE_PADDING);
-    });
-  }
-
-  function overlapsPlaced(box, placed) {
-    return placed.some(function (other) {
-      return boxesOverlap(box, other, PIN_LABEL_GAP);
-    });
-  }
-
-  function leaderCrossesCity(anchor, record, cities) {
-    return cities.some(function (city) {
-      if (!hasCoordinates(city) || city.id === record.id) return false;
-      if (Math.hypot(city.x - record.x, city.y - record.y) <= ANNOTATION_RING_RADIUS) return false;
-      return distanceToSegment(city, anchor, record) < PIN_LEADER_CLEARANCE;
-    });
-  }
-
-  function calloutLabel(record, spot) {
+  function calloutLabel(record, spot, hint) {
     var note = element('p');
-    note.className = 'ccg-map__annotation' + (spot ? '' : ' ccg-map__annotation--unplaced');
+    note.className = 'ccg-map__annotation' + (spot ? '' : ' ccg-map__annotation--unplaced') +
+      (hint ? ' is-preview' : '') + (!hint || hint.pinned ? ' is-pinned' : '');
 
     if (spot) {
       note.style.setProperty('--ccg-annotation-left', spot.left + '%');
-      note.style.setProperty('--ccg-annotation-top', spot.top + '%');
+      if (spot.top !== null) note.style.setProperty('--ccg-annotation-top', spot.top + '%');
+      else note.style.setProperty('--ccg-annotation-bottom', spot.bottom + '%');
       note.style.setProperty('--ccg-annotation-width', spot.width + '%');
     }
 
@@ -485,10 +543,61 @@
     var where = element('span', pinWhere(record));
     where.className = 'ccg-map__annotation-where';
     note.appendChild(where);
+
+    if (hint && hint.button) {
+      var button = element('button', hint.button);
+      button.type = 'button';
+      button.tabIndex = -1;
+      button.className = 'ccg-button ccg-button--small ccg-map__annotation-pin';
+      button.setAttribute('data-ccg-map-pin', record.id);
+      note.appendChild(button);
+    } else if (hint) {
+      var hintNote = element('span', hint.text);
+      hintNote.className = 'ccg-map__annotation-hint';
+      note.appendChild(hintNote);
+    }
     return note;
   }
 
-  function renderCallouts(container, svg, records, cities) {
+  function createReticle() {
+    var node = element('div');
+    node.className = 'ccg-reticle';
+
+    var svg = svgElement('svg');
+    var half = RETICLE_SIZE / 2;
+    svg.setAttribute('viewBox', [-half, -half, RETICLE_SIZE, RETICLE_SIZE].join(' '));
+    svg.setAttribute('width', RETICLE_SIZE);
+    svg.setAttribute('height', RETICLE_SIZE);
+    RETICLE_PARTS.forEach(function (part) {
+      var circle = svgElement('circle');
+      circle.setAttribute('r', part.r);
+      circle.setAttribute('stroke-width', part.width);
+      if (part.className) circle.setAttribute('class', part.className);
+      svg.appendChild(circle);
+    });
+    node.appendChild(svg);
+    return node;
+  }
+
+  function nearestBubble(svg, point, reach) {
+    var nearest = null;
+    var nearestDistance = Infinity;
+    findAll(svg, '.ccg-map__bubble').forEach(function (bubble) {
+      var box = bubble.getBoundingClientRect();
+      var distance = Math.hypot(box.left + box.width / 2 - point.x, box.top + box.height / 2 - point.y);
+      if (distance <= box.width / 2 + reach && distance < nearestDistance) {
+        nearest = bubble;
+        nearestDistance = distance;
+      }
+    });
+    return nearest && nearest.getAttribute('data-ccg-id');
+  }
+
+  function bubbleAt(svg, point) {
+    return nearestBubble(svg, point, CROSSHAIR_RADIUS) || nearestBubble(svg, point, TARGET_RADIUS);
+  }
+
+  function renderCallouts(container, svg, records, cities, preview) {
     var layer = find(svg, '.ccg-map__annotations');
     var geometry = basemap();
     var placed = [];
@@ -499,20 +608,25 @@
     });
 
     records.forEach(function (record) {
+      var hint = preview && record.id === preview.id ? preview.hint : null;
+      var group = svgElement('g');
+      if (hint && !hint.pinned) group.setAttribute('class', 'is-preview');
+      layer.appendChild(group);
+
       var spot = hasCoordinates(record)
         ? placeCallout(record, cities, placed, geometry, labelHeight(container, svg, record, geometry))
         : null;
 
       if (spot) {
-        placed.push(spot.box);
-        layer.appendChild(leaderLine(spot.leader, record));
+        placed.push({ box: spot.box, anchor: spot.leader, record: record });
+        group.appendChild(leaderLine(spot.leader, record));
       }
       if (hasCoordinates(record)) {
         // The halo goes first so it sits under the orange ring.
-        layer.appendChild(annotationRing(record, 'ccg-map__ring-halo'));
-        layer.appendChild(annotationRing(record, 'ccg-map__ring'));
+        group.appendChild(annotationRing(record, 'ccg-map__ring-halo'));
+        group.appendChild(annotationRing(record, 'ccg-map__ring'));
       }
-      container.appendChild(calloutLabel(record, spot));
+      container.appendChild(calloutLabel(record, spot, hint));
     });
   }
 
@@ -1454,12 +1568,139 @@
     var svg = fillMapFigure(figure, Object.assign(draw(state.filters.get()), {
       caption: mapCaption(stats())
     }));
+    var map = find(figure, '.ccg-map');
+    var previewId = null;
+    var hideTimer = null;
+    var lastPointerType = null;
+    var reticle = wireReticle(map, svg, showPreview);
+
+    function drawCallouts(filters) {
+      var view = draw(filters);
+      var record = records.filter(function (candidate) {
+        return candidate.id === previewId;
+      })[0];
+      var pinned = Boolean(record) && isPinned(filters, record);
+      var preview = record && (!pinned || state.reticleUsed)
+        ? { id: previewId, hint: previewHint(filters, pinned) }
+        : null;
+      renderCallouts(map, svg, view.callouts.concat(record && !pinned ? [record] : []), view.cities, preview);
+    }
+
+    function previewHint(filters, pinned) {
+      if (pinned) return { button: 'Unpin', pinned: true };
+      if (pinnedIds(filters).length >= MAX_PINS) {
+        return { text: 'Table can only pin up to ' + MAX_PINS + ' cities, unpin one to pin more.' };
+      }
+      if (state.reticleUsed) return { button: 'Pin' };
+      return { text: 'Select this city to pin it to the table and view details below.' };
+    }
+
+    function showPreview(id) {
+      clearTimeout(hideTimer);
+      if (id === previewId) return;
+      previewId = id;
+      drawCallouts(state.filters.get());
+    }
+
+    map.addEventListener('pointerover', function (event) {
+      if (event.pointerType !== 'mouse') return;
+      var id = event.target.getAttribute('data-ccg-id');
+      if (id) showPreview(id);
+      else if (event.target.closest('.ccg-map__annotation.is-preview')) clearTimeout(hideTimer);
+    });
+
+    map.addEventListener('pointerdown', function (event) {
+      lastPointerType = event.pointerType;
+    });
+
+    map.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-ccg-map-pin]');
+      var id = button ? button.getAttribute('data-ccg-map-pin') :
+        lastPointerType !== 'touch' && event.target.getAttribute('data-ccg-id');
+      if (id) state.filters.set({ pinned: toggledPins(state.filters.get(), id) });
+    });
+
+    map.addEventListener('pointerout', function (event) {
+      if (event.pointerType !== 'mouse') return;
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () {
+        showPreview(reticle.target());
+      }, PREVIEW_GRACE_MS);
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') showPreview(null);
+    });
 
     state.filters.subscribe(function (next) {
       var view = draw(next);
       renderMap(svg, view.cities, view.render);
-      renderCallouts(find(figure, '.ccg-map'), svg, view.callouts, view.cities);
+      previewId = reticle.target();
+      drawCallouts(next);
     });
+  }
+
+  function wireReticle(map, svg, onMove) {
+    var geometry = basemap();
+    var node = null;
+    var point = null;
+    var grab = null;
+
+    function toClient(mapPoint) {
+      var box = svg.getBoundingClientRect();
+      return {
+        x: box.left + (mapPoint.x / geometry.width) * box.width,
+        y: box.top + (mapPoint.y / geometry.height) * box.height
+      };
+    }
+
+    function toMap(clientX, clientY) {
+      var box = svg.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.min(geometry.width, ((clientX - box.left) / box.width) * geometry.width)),
+        y: Math.max(0, Math.min(geometry.height, ((clientY - box.top) / box.height) * geometry.height))
+      };
+    }
+
+    function target() {
+      return point ? bubbleAt(svg, toClient(point)) : null;
+    }
+
+    function place(clientX, clientY) {
+      if (!node) {
+        node = createReticle();
+        map.appendChild(node);
+        wireDrag();
+        state.reticleUsed = true;
+      }
+      point = toMap(clientX, clientY);
+      node.style.setProperty('--ccg-reticle-x', (point.x / geometry.width) * 100);
+      node.style.setProperty('--ccg-reticle-y', (point.y / geometry.width) * 100);
+      onMove(target());
+    }
+
+    function wireDrag() {
+      node.addEventListener('pointerdown', function (event) {
+        var center = toClient(point);
+        grab = { x: center.x - event.clientX, y: center.y - event.clientY };
+        node.setPointerCapture(event.pointerId);
+      });
+      node.addEventListener('pointermove', function (event) {
+        if (grab) place(event.clientX + grab.x, event.clientY + grab.y);
+      });
+      ['pointerup', 'pointercancel'].forEach(function (type) {
+        node.addEventListener(type, function () {
+          grab = null;
+        });
+      });
+    }
+
+    map.addEventListener('pointerup', function (event) {
+      if (event.pointerType !== 'touch' || event.target.closest('.ccg-reticle, .ccg-map__annotation')) return;
+      place(event.clientX, event.clientY);
+    });
+
+    return { target: target };
   }
 
   function wirePagination(root, tableState, onChange) {
@@ -1530,16 +1771,7 @@
     });
 
     function togglePin(record) {
-      var filters = state.filters.get();
-      var pinned = pinnedIds(filters);
-
-      var next = isPinned(filters, record) ?
-        pinned.filter(function (id) {
-          return id !== record.id;
-        }) :
-        pinned.concat([record.id]).slice(0, MAX_PINS);
-
-      state.filters.set({ pinned: next });
+      state.filters.set({ pinned: toggledPins(state.filters.get(), record.id) });
       focusPin(record);
     }
 
@@ -1654,7 +1886,9 @@
     }
 
     state.data = window.CCG_DATA;
+    if (USE_PACKED_POSITIONS) dataset().forEach(usePackedPosition);
     state.places = null;
+    state.reticleUsed = false;
     state.placesRequested = false;
     state.filters = createStore(Object.assign({}, DEFAULT_FILTERS, {
       pinned: DEFAULT_PINS.filter(function (id) {

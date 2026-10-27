@@ -429,11 +429,34 @@
   --ccg-map-state: #000000;
   --ccg-map-bubble-stroke: #cbdff5;
   --ccg-map-accent: #f69b5a;
-  --ccg-map-halo: #ffffff;
+  --ccg-map-callout-line: #ffffff;
 }
 
 #ccg-dashboard .ccg-map {
   position: relative;
+  container-type: inline-size;
+}
+
+#ccg-dashboard .ccg-reticle {
+  position: absolute;
+  left: calc(var(--ccg-reticle-x) * 1cqw);
+  top: calc(var(--ccg-reticle-y) * 1cqw);
+  transform: translate(-50%, -50%);
+  touch-action: none;
+}
+
+#ccg-dashboard .ccg-reticle circle {
+  fill: none;
+  stroke: #000000;
+}
+
+#ccg-dashboard .ccg-reticle .is-outline {
+  stroke: #ffffff;
+}
+
+#ccg-dashboard .ccg-reticle .is-glow {
+  stroke: #ffffff;
+  stroke-opacity: 0.3;
 }
 
 #ccg-dashboard .ccg-map__svg {
@@ -467,6 +490,7 @@
 }
 
 #ccg-dashboard .ccg-map__bubble {
+  cursor: pointer;
   stroke: var(--ccg-map-bubble-stroke);
   stroke-width: 1;
   fill-opacity: 0.85;
@@ -478,9 +502,13 @@
   isolation: isolate;
 }
 
+#ccg-dashboard .ccg-map__annotations {
+  pointer-events: none;
+}
+
 #ccg-dashboard .ccg-map__ring-halo {
   fill: none;
-  stroke: var(--ccg-map-halo);
+  stroke: var(--ccg-map-callout-line);
   stroke-width: 3;
   stroke-opacity: 1;
 }
@@ -492,8 +520,34 @@
 }
 
 #ccg-dashboard .ccg-map__leader {
-  stroke: var(--ccg-map-accent);
+  stroke: var(--ccg-map-callout-line);
   stroke-width: 1.5;
+}
+
+#ccg-dashboard g.is-preview > * {
+  stroke-dasharray: 8 4;
+}
+
+#ccg-dashboard .is-preview > .ccg-map__ring-halo {
+  stroke-width: 2;
+}
+
+#ccg-dashboard .is-preview > .ccg-map__ring {
+  stroke-width: 1;
+}
+
+#ccg-dashboard .is-preview > .ccg-map__leader {
+  stroke-width: 1;
+}
+
+#ccg-dashboard .ccg-map__annotation-pin {
+  display: block;
+  margin: 0.25rem 0 0;
+}
+
+#ccg-dashboard .ccg-map__annotation-hint {
+  display: block;
+  font-style: italic;
 }
 
 #ccg-dashboard .ccg-map__annotation {
@@ -511,6 +565,17 @@
   display: none;
 }
 
+@media (max-width: 779px) {
+  #ccg-dashboard .ccg-map__annotation.is-preview {
+    padding: 0.25rem 0.5rem;
+    border: 1px dashed var(--ccg-map-accent);
+  }
+
+  #ccg-dashboard .ccg-map__annotation.is-pinned {
+    border-inline-start: 3px solid var(--ccg-map-accent);
+  }
+}
+
 @media (min-width: 780px) {
   #ccg-dashboard .ccg-map__leader {
     display: inline;
@@ -519,11 +584,12 @@
   #ccg-dashboard .ccg-map__annotation {
     position: absolute;
     left: var(--ccg-annotation-left);
-    top: var(--ccg-annotation-top);
+    top: var(--ccg-annotation-top, auto);
+    bottom: var(--ccg-annotation-bottom, auto);
     width: var(--ccg-annotation-width);
     margin: 0;
     padding: 0.125rem 0.25rem;
-    border: 0;
+    border: 1px solid var(--ccg-map-callout-line);
     background: rgba(0, 0, 0, 0.85);
     font-size: 0.8125rem;
     line-height: 1.25;
