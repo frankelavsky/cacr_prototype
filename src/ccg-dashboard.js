@@ -223,8 +223,9 @@
 
   var UNKNOWN_POPULATION_RADIUS = 3;
 
-  // ColorBrewer Blues. The bubble stroke, not the fill, carries the 3:1 contrast.
-  var COUNT_COLORS = ['#deebf7', '#b5d4ea', '#82badb', '#4f9bc9', '#2b76b0', '#08417e'];
+  // #1f2f3f to #a1d2ff in even OKLab steps, so more practices read brighter on the dark ground.
+  // The bubble stroke, not the fill, carries the 3:1 contrast.
+  var COUNT_COLORS = ['#1f2f3f', '#364c61', '#4f6b86', '#698cad', '#85aed5', '#a1d2ff'];
 
   var ANNOTATION_RING_RADIUS = 13;
 
@@ -927,25 +928,12 @@
     return note;
   }
 
-  function profileCall(record) {
-    var note = element('p', '[FILLER: Want to get involved? See changes you would like to make?] ');
-    note.className = 'ccg-profile__cta';
-
-    var link = element('a', '[FILLER: link text]');
-    link.className = 'ccg-cta';
-    link.href = '#';
-    link.appendChild(hiddenLabel(' for ' + cityLabel(record)));
-
-    note.appendChild(link);
-    return note;
-  }
-
   function cityProfile(record) {
     var missing = isNoData(record);
     var profile = element('div');
     profile.className = 'ccg-profile' + (missing ? ' ccg-profile--no-data' : '');
     profile.appendChild(element('h3', cityLabel(record) + (missing ? ' ' + noDataLabel('flag') : '')));
-    profile.appendChild(missing ? noDataCall(record) : profileCall(record));
+    if (missing) profile.appendChild(noDataCall(record));
 
     var facts = element('dl');
     facts.className = 'ccg-profile__fields';
@@ -1306,6 +1294,8 @@
   function fillStats(root) {
     findAll(root, '[data-ccg-stat]').forEach(function (slot) {
       var value = stats()[slot.getAttribute('data-ccg-stat')];
+      // 385 reads "300+", so the copy stays true as the survey grows.
+      if (slot.hasAttribute('data-ccg-round-down')) value = Math.floor(value / 100) * 100 + '+';
       slot.textContent = value === undefined || value === null ? '' : String(value);
     });
   }
@@ -1709,7 +1699,8 @@
 
   function hydrate(root) {
     fillStats(root);
-    fillPracticeDefinitions(find(root, '[data-ccg-practice-definitions]'));
+    // Its list is commented out of index.html; the host page carries the practices.
+    // fillPracticeDefinitions(find(root, '[data-ccg-practice-definitions]'));
     setUpMap(root);
     wireFilters(root, state.filters);
     wireTable(root);

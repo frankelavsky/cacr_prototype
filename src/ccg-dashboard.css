@@ -1,18 +1,21 @@
 /* All styles are scoped under #ccg-dashboard so the embed cannot leak into the host page. */
 
 #ccg-dashboard {
-  --ccg-text: #1b1b1b;
-  --ccg-text-muted: #313131;
-  --ccg-bg: #ffffff;
+  /* Based on the UNICEF USA palette (from_team/_variables.scss); the bright originals are in archive/. */
+  --ccg-text: #ffffff;
+  --ccg-text-muted: #e3e1dc;
+  --ccg-bg: #000000;
   --ccg-rule: #d6d6d6;
-  --ccg-focus: #0b4778;
+  --ccg-focus: #5fceed;
   /* Body text on this must still clear 4.5:1. */
-  --ccg-pinned-bg: #e9f4fd;
-  --ccg-surface-alt: #f2f5f8;
+  --ccg-pinned-bg: #002442;
+  --ccg-pinned-bar: #7992ac;
+  --ccg-surface-alt: #222222;
   --ccg-control-height: 2.75rem;
   --ccg-measure: 42rem;
   --ccg-space: 1rem;
 
+  color-scheme: dark;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 1rem;
@@ -73,6 +76,7 @@
 
 #ccg-dashboard h2 {
   font-size: clamp(1.25rem, 4vw, 1.5rem);
+  color: var(--ccg-focus);
 }
 
 #ccg-dashboard h3 {
@@ -81,6 +85,10 @@
 
 #ccg-dashboard p {
   text-wrap: pretty;
+}
+
+#ccg-dashboard a {
+  color: var(--ccg-focus);
 }
 
 /* Visible focus is a hard requirement — never remove this without a replacement. */
@@ -107,7 +115,7 @@
 #ccg-dashboard {
   --ccg-measure-wide: 60rem;
   --ccg-section-gap: 1.5rem;
-  --ccg-placeholder-bg: #f4f4f4;
+  --ccg-placeholder-bg: #323232;
 }
 
 #ccg-dashboard .ccg-section {
@@ -380,7 +388,7 @@
 }
 
 #ccg-dashboard .ccg-button:hover {
-  background: #eef4fa;
+  background: var(--ccg-surface-alt);
 }
 
 @media (min-width: 640px) {
@@ -447,11 +455,11 @@
    ========================================================================== */
 
 #ccg-dashboard {
-  --ccg-map-land: #e9edf0;
+  --ccg-map-land: #323232;
   --ccg-map-outline: #6f6f6f;
-  --ccg-map-state: #ffffff;
-  --ccg-map-bubble-stroke: #10365e;
-  --ccg-map-accent: #9a3412;
+  --ccg-map-state: #000000;
+  --ccg-map-bubble-stroke: #cbdff5;
+  --ccg-map-accent: #f69b5a;
 }
 
 #ccg-dashboard .ccg-map {
@@ -493,6 +501,12 @@
   stroke: var(--ccg-map-bubble-stroke);
   stroke-width: 1;
   fill-opacity: 0.85;
+  stroke-opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+#ccg-dashboard .ccg-map__cities {
+  isolation: isolate;
 }
 
 #ccg-dashboard .ccg-map__bubble.is-highlighted {
@@ -539,7 +553,7 @@
     margin: 0;
     padding: 0.125rem 0.25rem;
     border: 0;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(0, 0, 0, 0.85);
     font-size: 0.8125rem;
     line-height: 1.25;
   }
@@ -603,8 +617,9 @@
   background: var(--ccg-dot-fill, transparent);
 }
 
+/* Hollow: size says nothing about practices, so it borrows no color from the count scale. */
 #ccg-dashboard .ccg-legend__group--size .ccg-legend__dot {
-  --ccg-dot-fill: #c8d6e3;
+  --ccg-dot-fill: transparent;
 }
 
 #ccg-dashboard .ccg-legend__group--count .ccg-legend__dot {
@@ -622,8 +637,8 @@
    ========================================================================== */
 
 #ccg-dashboard {
-  --ccg-table-stripe: #f6f7f8;
-  --ccg-table-head: #eef1f4;
+  --ccg-table-stripe: #222222;
+  --ccg-table-head: #222222;
 }
 
 #ccg-dashboard .ccg-table {
@@ -708,7 +723,7 @@
 }
 
 #ccg-dashboard .ccg-table__row--pinned > :first-child {
-  box-shadow: inset 0.25rem 0 0 var(--ccg-map-bubble-stroke);
+  box-shadow: inset 0.25rem 0 0 var(--ccg-pinned-bar);
 }
 
 #ccg-dashboard .ccg-table__row--pinned th {
@@ -943,7 +958,7 @@
 }
 
 #ccg-dashboard .ccg-table__head-cell.is-sorted {
-  background: #dfe6ec;
+  background: #323232;
 }
 
 #ccg-dashboard .ccg-table__head-cell.is-sorted .ccg-table__sort-arrow {

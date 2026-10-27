@@ -16,19 +16,20 @@
 -->
 <div id="ccg-dashboard">
 
-  <a class="ccg-skip-link" href="#ccg-table-heading">Skip to the data table</a>
+  <!-- Commented out: the host page supplies all copy above the map and below the table. -->
+  <!-- <a class="ccg-skip-link" href="#ccg-table-heading">Skip to the data table</a>
 
   <header class="ccg-section">
     <h1>Child-Centered Governance in Action</h1>
     <p class="ccg-subtitle">Explore how communities across the country are putting child-centered governance strategies into practice.</p>
-  </header>
+  </header> -->
 
   <main>
 
     <!-- Kept deliberately short: on a 360px viewport Map 1 has to start above the fold. -->
-    <section class="ccg-section" aria-labelledby="ccg-intro-heading">
+    <!-- <section class="ccg-section" aria-labelledby="ccg-intro-heading"> -->
       <!-- <h2 id="ccg-intro-heading">[FILLER: intro heading]</h2> -->
-      <p>Child-centered governance (CCG) gives local governments practical ways to consider children's needs and perspectives in decision-making, policies and public investments. The National League of Cities and UNICEF USA surveyed <span data-ccg-stat="totalCities"></span> municipalities nationwide to understand where and how communities are adopting and implementing child-centered governance practices.</p>
+      <!-- <p>Child-centered governance (CCG) gives local governments practical ways to consider children's needs and perspectives in decision-making, policies and public investments. The National League of Cities and UNICEF USA surveyed <span data-ccg-stat="totalCities"></span> municipalities nationwide to understand where and how communities are adopting and implementing child-centered governance practices.</p> -->
 
       <!-- <div class="ccg-stat">
         <p class="ccg-stat__number"><span data-ccg-stat="citiesWithAnyPractice_pct"></span>%</p>
@@ -53,23 +54,23 @@
         <p class="ccg-stat__number">[FILLER: impact number]</p>
         <p class="ccg-stat__label">[FILLER: one sentence on what child-centered governance changes for young people, with its source]</p>
       </div> -->
-    </section>
+    <!-- </section>
 
       <p></p>
     <section class="ccg-section" aria-labelledby="ccg-practices-heading">
       <h2 id="ccg-practices-heading">The five CCG practices</h2>
-      <p>Child-centered governance can take different forms depending on a community’s needs and context. The survey focused on five practices that help local governments incorporate children’s needs and perspectives into governance:</p>
+      <p>Child-centered governance can take different forms depending on a community’s needs and context. The survey focused on five practices that help local governments incorporate children’s needs and perspectives into governance:</p> -->
       <!-- Names and definitions are authored in data/source/practices.json and baked into CCG_DATA. -->
-      <dl class="ccg-practice-list" data-ccg-practice-definitions></dl>
-    </section>
+      <!-- <dl class="ccg-practice-list" data-ccg-practice-definitions></dl>
+    </section> -->
 
     <!--
       One map. It is a display of whatever the controls below it are showing: the reader
       never operates it, and it is the first thing on the page at 360px.
     -->
-    <section class="ccg-section ccg-section--wide" aria-labelledby="ccg-map-heading">
-      <h2 id="ccg-map-heading">Explore Child-Centered Governance in the US</h2>
-      <p>See how communities around the country are implementing Child-Centered Governance strategies. Searching your city/state or filtering by size or number of practices will all narrow both the map and the table below.</p>
+    <section class="ccg-section ccg-section--wide">
+      <!-- <h2 id="ccg-map-heading">Explore Child-Centered Governance in the US</h2>
+      <p>See how communities around the country are implementing Child-Centered Governance strategies. Searching your city/state or filtering by size or number of practices will all narrow both the map and the table below.</p> -->
 
       <!--
         The graphic — legend, map, callouts — is one aria-hidden block. Everything it
@@ -136,7 +137,8 @@
     -->
     <section class="ccg-section" aria-labelledby="ccg-filters-heading">
       <h2 id="ccg-filters-heading">Find your city</h2>
-      <p>Explore the <span data-ccg-stat="totalCities"></span> cities that shared their child-centered governance structures with us and find whether your city is included.</p>
+      <p>Explore the <span data-ccg-stat="totalCities" data-ccg-round-down></span> municipalities that shared their child-centered governance structures with us. Search by location, population size or CCG practice.</p>
+      <p>Type a city or state to narrow the map above and the table below.</p>
 
       <!-- No submit button exists, but Enter in a form still submits and would reload the
            host page; the script prevents that. Every option list is filled from the data,
@@ -283,7 +285,7 @@
       <p class="ccg-visually-hidden" id="ccg-table-status"></p>
     </section>
 
-    <section class="ccg-section" aria-labelledby="ccg-involved-heading">
+    <!-- <section class="ccg-section" aria-labelledby="ccg-involved-heading">
       <h2 id="ccg-involved-heading">Ready to Bring Child-Centered Governance to Your Community?</h2>
       <p>Explore our resources and keep learning about the child-centered governance structures in your community! Interested to see your city on this map? <a href="#">Sign up</a> to be the first to know when we’ll be collecting more city data!</p>
     </section>
@@ -299,7 +301,7 @@
     <section class="ccg-section" aria-labelledby="ccg-learn-heading">
       <h2 id="ccg-learn-heading">Keep Exploring</h2>
       <p><a href="#">Research Library</a>	|	<a href="#">CCG Homepage</a>	|	<a href="#">Sign up</a></p>
-    </section>
+    </section> -->
 
   </main>
 
