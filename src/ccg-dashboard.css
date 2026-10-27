@@ -440,11 +440,6 @@
     max-width: var(--ccg-measure-wide);
   }
 
-  #ccg-dashboard .ccg-section--wide > :not(.ccg-figure):not(.ccg-table-container):not(.ccg-pagination) {
-    max-width: calc(var(--ccg-measure) - var(--ccg-space) * 2);
-    margin-inline: auto;
-  }
-
   #ccg-dashboard .ccg-figure {
     margin-block-start: 1.5rem;
   }
