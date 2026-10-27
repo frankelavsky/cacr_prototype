@@ -429,6 +429,7 @@
   --ccg-map-state: #000000;
   --ccg-map-bubble-stroke: #cbdff5;
   --ccg-map-accent: #f69b5a;
+  --ccg-map-halo: #ffffff;
 }
 
 #ccg-dashboard .ccg-map {
@@ -448,6 +449,7 @@
 #ccg-dashboard .ccg-map__outline,
 #ccg-dashboard .ccg-map__bubble,
 #ccg-dashboard .ccg-map__ring,
+#ccg-dashboard .ccg-map__ring-halo,
 #ccg-dashboard .ccg-map__leader {
   vector-effect: non-scaling-stroke;
 }
@@ -476,9 +478,11 @@
   isolation: isolate;
 }
 
-#ccg-dashboard .ccg-map__bubble.is-highlighted {
-  stroke: var(--ccg-map-accent);
-  stroke-width: 2;
+#ccg-dashboard .ccg-map__ring-halo {
+  fill: none;
+  stroke: var(--ccg-map-halo);
+  stroke-width: 3;
+  stroke-opacity: 1;
 }
 
 #ccg-dashboard .ccg-map__ring {

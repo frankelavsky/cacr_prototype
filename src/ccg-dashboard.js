@@ -289,9 +289,9 @@
     return line;
   }
 
-  function annotationRing(record) {
+  function annotationRing(record, className) {
     var ring = svgElement('circle');
-    ring.setAttribute('class', 'ccg-map__ring');
+    ring.setAttribute('class', className);
     ring.setAttribute('cx', record.x);
     ring.setAttribute('cy', record.y);
     ring.setAttribute('r', ANNOTATION_RING_RADIUS);
@@ -496,7 +496,11 @@
         placed.push(spot.box);
         layer.appendChild(leaderLine(spot.leader, record));
       }
-      if (hasCoordinates(record)) layer.appendChild(annotationRing(record));
+      if (hasCoordinates(record)) {
+        // The halo goes first so it sits under the orange ring.
+        layer.appendChild(annotationRing(record, 'ccg-map__ring-halo'));
+        layer.appendChild(annotationRing(record, 'ccg-map__ring'));
+      }
       container.appendChild(calloutLabel(record, spot));
     });
   }
