@@ -420,10 +420,19 @@
     return null;
   }
 
-  function placeCallout(record, cities, placed, geometry) {
+  function labelHeight(container, svg, record, geometry) {
+    var probe = calloutLabel(record, { left: 0, top: 0, width: PIN_LABEL_WIDTH_PCT });
+    container.appendChild(probe);
+    var pixels = probe.offsetHeight;
+    container.removeChild(probe);
+    var scale = svg.getBoundingClientRect().width / geometry.width;
+    return pixels && scale ? pixels / scale : PIN_LABEL_HEIGHT;
+  }
+
+  function placeCallout(record, cities, placed, geometry, height) {
     var size = {
       width: (PIN_LABEL_WIDTH_PCT / 100) * geometry.width,
-      height: PIN_LABEL_HEIGHT
+      height: height
     };
 
     for (var d = 0; d < PIN_DISTANCES.length; d += 1) {
@@ -490,7 +499,9 @@
     });
 
     records.forEach(function (record) {
-      var spot = hasCoordinates(record) ? placeCallout(record, cities, placed, geometry) : null;
+      var spot = hasCoordinates(record)
+        ? placeCallout(record, cities, placed, geometry, labelHeight(container, svg, record, geometry))
+        : null;
 
       if (spot) {
         placed.push(spot.box);
