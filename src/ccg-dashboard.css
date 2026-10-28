@@ -445,18 +445,78 @@
   touch-action: none;
 }
 
-#ccg-dashboard .ccg-reticle circle {
+#ccg-dashboard .ccg-reticle-parts circle {
   fill: none;
   stroke: #000000;
+  vector-effect: non-scaling-stroke;
 }
 
-#ccg-dashboard .ccg-reticle .is-outline {
+#ccg-dashboard .ccg-reticle-parts .is-outline {
   stroke: #ffffff;
 }
 
-#ccg-dashboard .ccg-reticle .is-glow {
+#ccg-dashboard .ccg-reticle-parts .is-glow {
   stroke: #ffffff;
   stroke-opacity: 0.3;
+}
+
+#ccg-dashboard .ccg-map__zoom {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: calc(var(--ccg-zoom-top) * 1cqw);
+  translate: 0 -50%;
+  width: calc((100% - 4rem) / 2);
+  aspect-ratio: 1;
+  border: 2px solid var(--ccg-map-callout-line);
+  background: var(--ccg-bg);
+  pointer-events: none;
+}
+
+#ccg-dashboard .ccg-map__zoom.is-right {
+  left: auto;
+  right: 0;
+}
+
+#ccg-dashboard .ccg-map__zoom[hidden] {
+  display: none;
+}
+
+#ccg-dashboard .ccg-map__zoom-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--ccg-map-callout-line);
+  background: rgba(0, 0, 0, 0.85);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ccg-dashboard .ccg-map__zoom-label:empty {
+  display: none;
+}
+
+#ccg-dashboard .ccg-map__zoom svg {
+  --ccg-zoom-leader: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#ccg-map-layers .ccg-map__bubble,
+#ccg-map-layers .ccg-map__ring,
+#ccg-map-layers .ccg-map__ring-halo,
+#ccg-dashboard .is-crosshair {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: var(--ccg-zoom-shrink, 1);
 }
 
 #ccg-dashboard .ccg-map__svg {
@@ -464,32 +524,32 @@
   height: auto;
 }
 
-#ccg-dashboard .ccg-map__land {
+#ccg-map-layers .ccg-map__land {
   fill: var(--ccg-map-land);
 }
 
-#ccg-dashboard .ccg-map__states,
-#ccg-dashboard .ccg-map__outline,
-#ccg-dashboard .ccg-map__bubble,
-#ccg-dashboard .ccg-map__ring,
-#ccg-dashboard .ccg-map__ring-halo,
-#ccg-dashboard .ccg-map__leader {
+#ccg-map-layers .ccg-map__states,
+#ccg-map-layers .ccg-map__outline,
+#ccg-map-layers .ccg-map__bubble,
+#ccg-map-layers .ccg-map__ring,
+#ccg-map-layers .ccg-map__ring-halo,
+#ccg-map-layers .ccg-map__leader {
   vector-effect: non-scaling-stroke;
 }
 
-#ccg-dashboard .ccg-map__states {
+#ccg-map-layers .ccg-map__states {
   fill: none;
   stroke: var(--ccg-map-state);
   stroke-width: 1;
 }
 
-#ccg-dashboard .ccg-map__outline {
+#ccg-map-layers .ccg-map__outline {
   fill: none;
   stroke: var(--ccg-map-outline);
   stroke-width: 1;
 }
 
-#ccg-dashboard .ccg-map__bubble {
+#ccg-map-layers .ccg-map__bubble {
   cursor: pointer;
   stroke: var(--ccg-map-bubble-stroke);
   stroke-width: 1;
@@ -498,45 +558,45 @@
   mix-blend-mode: screen;
 }
 
-#ccg-dashboard .ccg-map__cities {
+#ccg-map-layers .ccg-map__cities {
   isolation: isolate;
 }
 
-#ccg-dashboard .ccg-map__annotations {
+#ccg-map-layers .ccg-map__annotations {
   pointer-events: none;
 }
 
-#ccg-dashboard .ccg-map__ring-halo {
+#ccg-map-layers .ccg-map__ring-halo {
   fill: none;
   stroke: var(--ccg-map-callout-line);
   stroke-width: 3;
   stroke-opacity: 1;
 }
 
-#ccg-dashboard .ccg-map__ring {
+#ccg-map-layers .ccg-map__ring {
   fill: none;
   stroke: var(--ccg-map-accent);
   stroke-width: 2;
 }
 
-#ccg-dashboard .ccg-map__leader {
+#ccg-map-layers .ccg-map__leader {
   stroke: var(--ccg-map-callout-line);
   stroke-width: 1.5;
 }
 
-#ccg-dashboard g.is-preview > * {
-  stroke-dasharray: 8 4;
+#ccg-map-layers g.is-preview > * {
+  stroke-dasharray: 6 2;
 }
 
-#ccg-dashboard .is-preview > .ccg-map__ring-halo {
+#ccg-map-layers .is-preview > .ccg-map__ring-halo {
   stroke-width: 2;
 }
 
-#ccg-dashboard .is-preview > .ccg-map__ring {
+#ccg-map-layers .is-preview > .ccg-map__ring {
   stroke-width: 1;
 }
 
-#ccg-dashboard .is-preview > .ccg-map__leader {
+#ccg-map-layers .is-preview > .ccg-map__leader {
   stroke-width: 1;
 }
 
@@ -561,7 +621,7 @@
   font-weight: 700;
 }
 
-#ccg-dashboard .ccg-map__leader {
+#ccg-map-layers .ccg-map__leader {
   display: none;
 }
 
@@ -577,8 +637,8 @@
 }
 
 @media (min-width: 780px) {
-  #ccg-dashboard .ccg-map__leader {
-    display: inline;
+  #ccg-map-layers .ccg-map__leader {
+    display: var(--ccg-zoom-leader, inline);
   }
 
   #ccg-dashboard .ccg-map__annotation {

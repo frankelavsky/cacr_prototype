@@ -217,10 +217,12 @@
   var RETICLE_PARTS = [
     { r: TARGET_RADIUS, width: 4, className: 'is-outline' },
     { r: TARGET_RADIUS, width: 2, className: '' },
-    { r: CROSSHAIR_RADIUS, width: 7, className: 'is-glow' },
-    { r: CROSSHAIR_RADIUS, width: 3, className: 'is-outline' },
-    { r: CROSSHAIR_RADIUS, width: 1, className: '' }
+    { r: CROSSHAIR_RADIUS, width: 7, className: 'is-crosshair is-glow' },
+    { r: CROSSHAIR_RADIUS, width: 3, className: 'is-crosshair is-outline' },
+    { r: CROSSHAIR_RADIUS, width: 1, className: 'is-crosshair' }
   ];
+  var ZOOM_FIELD = TARGET_RADIUS * 2.4;
+  var ZOOM_GROWTH = 2;
 
   var PIN_LABEL_WIDTH_PCT = 18;
   var PIN_LABEL_HEIGHT = 80;
@@ -559,6 +561,19 @@
     return note;
   }
 
+  function reticleParts() {
+    var group = svgElement('g');
+    group.setAttribute('class', 'ccg-reticle-parts');
+    RETICLE_PARTS.forEach(function (part) {
+      var circle = svgElement('circle');
+      circle.setAttribute('r', part.r);
+      circle.setAttribute('stroke-width', part.width);
+      if (part.className) circle.setAttribute('class', part.className);
+      group.appendChild(circle);
+    });
+    return group;
+  }
+
   function createReticle() {
     var node = element('div');
     node.className = 'ccg-reticle';
@@ -568,14 +583,28 @@
     svg.setAttribute('viewBox', [-half, -half, RETICLE_SIZE, RETICLE_SIZE].join(' '));
     svg.setAttribute('width', RETICLE_SIZE);
     svg.setAttribute('height', RETICLE_SIZE);
-    RETICLE_PARTS.forEach(function (part) {
-      var circle = svgElement('circle');
-      circle.setAttribute('r', part.r);
-      circle.setAttribute('stroke-width', part.width);
-      if (part.className) circle.setAttribute('class', part.className);
-      svg.appendChild(circle);
-    });
+    svg.appendChild(reticleParts());
     node.appendChild(svg);
+    return node;
+  }
+
+  function createZoom(geometry) {
+    var node = element('div');
+    node.className = 'ccg-map__zoom';
+    node.hidden = true;
+    node.setAttribute('aria-hidden', 'true');
+    node.style.setProperty('--ccg-zoom-top', (geometry.height / geometry.width) * 50);
+
+    var svg = svgElement('svg');
+    var layers = svgElement('use');
+    layers.setAttribute('href', '#ccg-map-layers');
+    svg.appendChild(layers);
+    svg.appendChild(reticleParts());
+    node.appendChild(svg);
+
+    var label = element('p');
+    label.className = 'ccg-map__zoom-label';
+    node.appendChild(label);
     return node;
   }
 
@@ -1643,6 +1672,7 @@
   function wireReticle(map, svg, onMove) {
     var geometry = basemap();
     var node = null;
+    var zoom = null;
     var point = null;
     var grab = null;
 
@@ -1669,7 +1699,9 @@
     function place(clientX, clientY) {
       if (!node) {
         node = createReticle();
+        zoom = createZoom(geometry);
         map.appendChild(node);
+        map.appendChild(zoom);
         wireDrag();
         state.reticleUsed = true;
       }
@@ -1679,6 +1711,23 @@
       onMove(target());
     }
 
+    function showZoom() {
+      var unit = svg.getBoundingClientRect().width / geometry.width;
+      var field = ZOOM_FIELD / unit;
+      var view = zoom.firstChild;
+      var id = target();
+      var record = dataset().filter(function (candidate) {
+        return candidate.id === id;
+      })[0];
+
+      zoom.classList.toggle('is-right', point.x < geometry.width / 2);
+      zoom.hidden = false;
+      view.setAttribute('viewBox', [point.x - field / 2, point.y - field / 2, field, field].join(' '));
+      view.style.setProperty('--ccg-zoom-shrink', Math.min(1, (ZOOM_GROWTH * ZOOM_FIELD) / zoom.offsetWidth));
+      view.lastChild.setAttribute('transform', 'translate(' + point.x + ' ' + point.y + ') scale(' + 1 / unit + ')');
+      zoom.lastChild.textContent = record ? cityLabel(record) : '';
+    }
+
     function wireDrag() {
       node.addEventListener('pointerdown', function (event) {
         var center = toClient(point);
@@ -1686,11 +1735,14 @@
         node.setPointerCapture(event.pointerId);
       });
       node.addEventListener('pointermove', function (event) {
-        if (grab) place(event.clientX + grab.x, event.clientY + grab.y);
+        if (!grab) return;
+        place(event.clientX + grab.x, event.clientY + grab.y);
+        showZoom();
       });
       ['pointerup', 'pointercancel'].forEach(function (type) {
         node.addEventListener(type, function () {
           grab = null;
+          zoom.hidden = true;
         });
       });
     }
