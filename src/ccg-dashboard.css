@@ -437,6 +437,10 @@
   container-type: inline-size;
 }
 
+#ccg-dashboard .ccg-map.has-target {
+  cursor: pointer;
+}
+
 #ccg-dashboard .ccg-reticle {
   position: absolute;
   left: calc(var(--ccg-reticle-x) * 1cqw);
@@ -550,7 +554,6 @@
 }
 
 #ccg-map-layers .ccg-map__bubble {
-  cursor: pointer;
   stroke: var(--ccg-map-bubble-stroke);
   stroke-width: 1;
   fill-opacity: 0.85;

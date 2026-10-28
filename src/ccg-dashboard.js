@@ -214,6 +214,7 @@
   var RETICLE_SIZE = 48;
   var CROSSHAIR_RADIUS = 3;
   var TARGET_RADIUS = 22;
+  var POINTER_REACH = 22;
   var RETICLE_PARTS = [
     { r: TARGET_RADIUS, width: 4, className: 'is-outline' },
     { r: TARGET_RADIUS, width: 2, className: '' },
@@ -288,7 +289,6 @@
   function bubble(record, radius, highlighted) {
     var circle = svgElement('circle');
     circle.setAttribute('class', 'ccg-map__bubble' + (highlighted ? ' is-highlighted' : ''));
-    circle.setAttribute('data-ccg-id', record.id);
     circle.setAttribute('cx', record.x);
     circle.setAttribute('cy', record.y);
     circle.setAttribute('r', radius);
@@ -608,22 +608,30 @@
     return node;
   }
 
-  function nearestBubble(svg, point, reach) {
-    var nearest = null;
-    var nearestDistance = Infinity;
-    findAll(svg, '.ccg-map__bubble').forEach(function (bubble) {
-      var box = bubble.getBoundingClientRect();
-      var distance = Math.hypot(box.left + box.width / 2 - point.x, box.top + box.height / 2 - point.y);
-      if (distance <= box.width / 2 + reach && distance < nearestDistance) {
-        nearest = bubble;
-        nearestDistance = distance;
-      }
-    });
-    return nearest && nearest.getAttribute('data-ccg-id');
+  function mapScale(svg) {
+    return svg.getBoundingClientRect().width / basemap().width;
   }
 
-  function bubbleAt(svg, point) {
-    return nearestBubble(svg, point, CROSSHAIR_RADIUS) || nearestBubble(svg, point, TARGET_RADIUS);
+  function toMapPoint(svg, clientX, clientY) {
+    var geometry = basemap();
+    var box = svg.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(geometry.width, ((clientX - box.left) / box.width) * geometry.width)),
+      y: Math.max(0, Math.min(geometry.height, ((clientY - box.top) / box.height) * geometry.height))
+    };
+  }
+
+  function cityAt(cities, point, reach) {
+    var nearest = null;
+    var nearestGap = reach;
+    cities.filter(hasCoordinates).forEach(function (city) {
+      var gap = Math.hypot(city.x - point.x, city.y - point.y) - bubbleRadius(city.populationIndex);
+      if (gap <= nearestGap) {
+        nearest = city;
+        nearestGap = gap;
+      }
+    });
+    return nearest && nearest.id;
   }
 
   function renderCallouts(container, svg, records, cities, preview) {
@@ -1594,14 +1602,21 @@
       };
     }
 
-    var svg = fillMapFigure(figure, Object.assign(draw(state.filters.get()), {
+    var initial = draw(state.filters.get());
+    var cities = initial.cities;
+    var svg = fillMapFigure(figure, Object.assign(initial, {
       caption: mapCaption(stats())
     }));
     var map = find(figure, '.ccg-map');
     var previewId = null;
     var hideTimer = null;
     var lastPointerType = null;
-    var reticle = wireReticle(map, svg, showPreview);
+    var hoveredId = null;
+    var reticle = wireReticle(map, svg, showPreview, cityNear);
+
+    function cityNear(point, reach) {
+      return cityAt(cities, point, reach / mapScale(svg));
+    }
 
     function drawCallouts(filters) {
       var view = draw(filters);
@@ -1624,18 +1639,33 @@
       return { text: 'Select this city to pin it to the table and view details below.' };
     }
 
-    function showPreview(id) {
+    function keepPreview() {
       clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+
+    function hidePreviewSoon() {
+      if (hideTimer) return;
+      hideTimer = setTimeout(function () {
+        showPreview(reticle.target());
+      }, PREVIEW_GRACE_MS);
+    }
+
+    function showPreview(id) {
+      keepPreview();
       if (id === previewId) return;
       previewId = id;
       drawCallouts(state.filters.get());
     }
 
-    map.addEventListener('pointerover', function (event) {
-      if (event.pointerType !== 'mouse') return;
-      var id = event.target.getAttribute('data-ccg-id');
-      if (id) showPreview(id);
-      else if (event.target.closest('.ccg-map__annotation.is-preview')) clearTimeout(hideTimer);
+    map.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch') return;
+      hoveredId = event.target.closest('.ccg-map__annotation') ? null :
+        cityNear(toMapPoint(svg, event.clientX, event.clientY), POINTER_REACH);
+      map.classList.toggle('has-target', Boolean(hoveredId));
+      if (hoveredId) showPreview(hoveredId);
+      else if (event.target.closest('.ccg-map__annotation.is-preview')) keepPreview();
+      else hidePreviewSoon();
     });
 
     map.addEventListener('pointerdown', function (event) {
@@ -1645,16 +1675,15 @@
     map.addEventListener('click', function (event) {
       var button = event.target.closest('[data-ccg-map-pin]');
       var id = button ? button.getAttribute('data-ccg-map-pin') :
-        lastPointerType !== 'touch' && event.target.getAttribute('data-ccg-id');
+        lastPointerType !== 'touch' && hoveredId;
       if (id) state.filters.set({ pinned: toggledPins(state.filters.get(), id) });
     });
 
-    map.addEventListener('pointerout', function (event) {
-      if (event.pointerType !== 'mouse') return;
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(function () {
-        showPreview(reticle.target());
-      }, PREVIEW_GRACE_MS);
+    map.addEventListener('pointerleave', function (event) {
+      if (event.pointerType === 'touch') return;
+      hoveredId = null;
+      map.classList.remove('has-target');
+      hidePreviewSoon();
     });
 
     document.addEventListener('keydown', function (event) {
@@ -1663,13 +1692,14 @@
 
     state.filters.subscribe(function (next) {
       var view = draw(next);
+      cities = view.cities;
       renderMap(svg, view.cities, view.render);
       previewId = reticle.target();
       drawCallouts(next);
     });
   }
 
-  function wireReticle(map, svg, onMove) {
+  function wireReticle(map, svg, onMove, cityNear) {
     var geometry = basemap();
     var node = null;
     var zoom = null;
@@ -1684,16 +1714,8 @@
       };
     }
 
-    function toMap(clientX, clientY) {
-      var box = svg.getBoundingClientRect();
-      return {
-        x: Math.max(0, Math.min(geometry.width, ((clientX - box.left) / box.width) * geometry.width)),
-        y: Math.max(0, Math.min(geometry.height, ((clientY - box.top) / box.height) * geometry.height))
-      };
-    }
-
     function target() {
-      return point ? bubbleAt(svg, toClient(point)) : null;
+      return point ? cityNear(point, TARGET_RADIUS) : null;
     }
 
     function place(clientX, clientY) {
@@ -1705,14 +1727,14 @@
         wireDrag();
         state.reticleUsed = true;
       }
-      point = toMap(clientX, clientY);
+      point = toMapPoint(svg, clientX, clientY);
       node.style.setProperty('--ccg-reticle-x', (point.x / geometry.width) * 100);
       node.style.setProperty('--ccg-reticle-y', (point.y / geometry.width) * 100);
       onMove(target());
     }
 
     function showZoom() {
-      var unit = svg.getBoundingClientRect().width / geometry.width;
+      var unit = mapScale(svg);
       var field = ZOOM_FIELD / unit;
       var view = zoom.firstChild;
       var id = target();
