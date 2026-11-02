@@ -263,7 +263,7 @@
   min-width: 100%;
   width: max-content;
   max-width: min(26rem, 88vw);
-  max-height: min(60vh, 26rem);
+  max-height: min(80vh, 36rem);
   overflow-y: auto;
   margin-block-start: 0.25rem;
   border: 1px solid var(--ccg-text);
@@ -289,41 +289,91 @@
   display: block;
 }
 
-#ccg-dashboard .ccg-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-height: var(--ccg-control-height);
-  padding: 0.5rem 0.75rem;
+#ccg-dashboard .ccg-practice-choice {
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.625rem;
+  border: 0;
   border-block-start: 1px solid var(--ccg-rule);
-  cursor: pointer;
 }
 
-#ccg-dashboard .ccg-checkbox:first-child {
+#ccg-dashboard .ccg-practice-choice:first-child {
   border-block-start: 0;
 }
 
-#ccg-dashboard .ccg-checkbox:hover,
-#ccg-dashboard .ccg-checkbox:focus-within {
+#ccg-dashboard .ccg-practice-choice:focus-within {
   background: var(--ccg-surface-alt);
 }
 
-#ccg-dashboard .ccg-checkbox input {
-  flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
+#ccg-dashboard .ccg-practice-choice legend {
+  float: left;
+  width: 100%;
+  margin-block-end: 0.375rem;
+  padding: 0;
+  font-weight: 400;
 }
 
-#ccg-dashboard .ccg-checkbox__name {
+#ccg-dashboard .ccg-segments {
+  clear: both;
+  display: flex;
+  border: 1px solid var(--ccg-rule);
+}
+
+#ccg-dashboard .ccg-segment {
+  position: relative;
   flex: 1 1 auto;
+  display: flex;
 }
 
-#ccg-dashboard .ccg-checkbox__count {
-  flex: none;
-  color: var(--ccg-text-muted);
+#ccg-dashboard .ccg-segment + .ccg-segment {
+  border-inline-start: 1px solid var(--ccg-rule);
+}
+
+/* The radio stays in the tab order and accessibility tree; its label is the visible target. */
+#ccg-dashboard .ccg-segment input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#ccg-dashboard .ccg-segment label {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.625rem;
   font-size: 0.875rem;
   white-space: nowrap;
+}
+
+#ccg-dashboard .ccg-segment__count {
+  color: var(--ccg-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#ccg-dashboard .ccg-segment input:hover + label {
+  background: var(--ccg-surface-alt);
+}
+
+#ccg-dashboard .ccg-segment input:checked + label {
+  background: var(--ccg-text);
+  color: var(--ccg-bg);
+  font-weight: 600;
+}
+
+#ccg-dashboard .ccg-segment input:checked + label .ccg-segment__count {
+  color: inherit;
+}
+
+#ccg-dashboard .ccg-segment input:focus-visible + label {
+  outline: 3px solid var(--ccg-focus);
+  outline-offset: -3px;
 }
 
 #ccg-dashboard .ccg-field > label {

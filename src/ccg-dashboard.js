@@ -31,6 +31,7 @@
 
   var DEFAULT_FILTERS = {
     practices: [],
+    withoutPractices: [],
     sizeBucket: 'all',
     query: ''
   };
@@ -68,6 +69,12 @@
     });
   }
 
+  function reportsNone(record, practiceKeys) {
+    return practiceKeys.every(function (key) {
+      return !isReported(record, key);
+    });
+  }
+
   function fold(text) {
     return String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
@@ -84,11 +91,20 @@
     return (filters && filters.practices) || [];
   }
 
+  function withoutPracticeKeys(filters) {
+    return (filters && filters.withoutPractices) || [];
+  }
+
+  function anyPracticeFilter(filters) {
+    return practiceKeys(filters).length > 0 || withoutPracticeKeys(filters).length > 0;
+  }
+
   function matchesFilters(record, filters) {
     var settings = filters || {};
     var query = normalizeQuery(settings.query);
 
     if (!reportsEvery(record, practiceKeys(settings))) return false;
+    if (!reportsNone(record, withoutPracticeKeys(settings))) return false;
     if (settings.sizeBucket !== 'all' && record.populationIndex !== settings.sizeBucket) return false;
     if (query && !matchesQuery(record, query)) return false;
     return true;
@@ -101,7 +117,7 @@
   }
 
   function hasActiveFilter(filters) {
-    return practiceKeys(filters).length > 0 ||
+    return anyPracticeFilter(filters) ||
       filters.sizeBucket !== 'all' ||
       normalizeQuery(filters.query) !== '';
   }
@@ -166,7 +182,7 @@
     var none = { shown: [], total: 0 };
 
     if (!places || query.length < NO_DATA_MIN_QUERY) return none;
-    if (practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all') return none;
+    if (anyPracticeFilter(filters) || filters.sizeBucket !== 'all') return none;
 
     var shown = [];
     var total = 0;
@@ -188,6 +204,7 @@
     var key = [
       normalizeQuery(filters.query),
       practiceKeys(filters).join(','),
+      withoutPracticeKeys(filters).join(','),
       filters.sizeBucket,
       state.places ? 'loaded' : 'pending'
     ].join('|');
@@ -432,7 +449,6 @@
 
   var PIN_SCAN_STEP = 12;
 
-  // A hint makes the label taller than the box it was placed by; it grows away from the city.
   function calloutSpot(box, record, geometry) {
     var cityBelow = record.y > box.top + box.height;
     return {
@@ -497,7 +513,6 @@
     return cost;
   }
 
-  // Every candidate is scored and the cheapest wins, so a city on the map always gets a callout.
   function placeCallout(record, cities, placed, geometry, height) {
     var size = {
       width: (PIN_LABEL_WIDTH_PCT / 100) * geometry.width,
@@ -659,7 +674,6 @@
         group.appendChild(leaderLine(spot.leader, record));
       }
       if (hasCoordinates(record)) {
-        // The halo goes first so it sits under the orange ring.
         group.appendChild(annotationRing(record, 'ccg-map__ring-halo'));
         group.appendChild(annotationRing(record, 'ccg-map__ring'));
       }
@@ -1218,12 +1232,12 @@
 
   function resultStatusText(filters, matches, totalCities, places) {
     var query = normalizeQuery(filters.query);
-    var others = practiceKeys(filters).length > 0 || filters.sizeBucket !== 'all';
+    var others = anyPracticeFilter(filters) || filters.sizeBucket !== 'all';
     var without = noDataSentence(places);
 
     if (!hasActiveFilter(filters)) {
       return 'Showing all ' + cityCount(totalCities) +
-        '. Check a practice, choose a size, or search to narrow the map above and the table below.';
+        '. Choose a practice, a size, or search to narrow the map above and the table below.';
     }
 
     function sentence(subject, plural) {
@@ -1424,10 +1438,12 @@
 
   function practiceFilterOptions(metaData, statsData) {
     return metaData.practices.map(function (practice) {
+      var reported = statsData.byPractice[practice.key].any;
       return {
         value: practice.key,
         name: practice.name,
-        count: cityCount(statsData.byPractice[practice.key].any)
+        reported: reported,
+        notReported: statsData.totalCities - reported
       };
     });
   }
@@ -1448,42 +1464,71 @@
     return raw === 'all' ? 'all' : Number(raw);
   }
 
-  function fillPracticeCheckboxes(container, options, onChange) {
+  var PRACTICE_CHOICES = [
+    { value: 'any', label: 'Any' },
+    { value: 'has', label: 'Reported', count: 'reported' },
+    { value: 'lacks', label: 'Not reported', count: 'notReported' }
+  ];
+
+  function practiceChoice(option, choice, onChange) {
+    var input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'ccg-practice-' + option.value;
+    input.id = input.name + '-' + choice.value;
+    input.value = choice.value;
+    input.checked = choice.value === 'any';
+    input.setAttribute('data-ccg-practice', option.value);
+    input.addEventListener('change', onChange);
+
+    var label = element('label', choice.label);
+    label.setAttribute('for', input.id);
+
+    if (choice.count) {
+      var count = element('span', String(option[choice.count]));
+      count.className = 'ccg-segment__count';
+      label.appendChild(count);
+      label.appendChild(hiddenLabel(option[choice.count] === 1 ? ' city' : ' cities'));
+    }
+
+    var segment = element('span');
+    segment.className = 'ccg-segment';
+    segment.appendChild(input);
+    segment.appendChild(label);
+    return segment;
+  }
+
+  function fillPracticeChoices(container, options, onChange) {
     clear(container);
 
     options.forEach(function (option) {
-      var input = document.createElement('input');
-      input.type = 'checkbox';
-      input.id = 'ccg-filter-practice-' + option.value;
-      input.value = option.value;
-      input.setAttribute('data-ccg-practice', option.value);
-      input.addEventListener('change', onChange);
+      var group = element('fieldset');
+      group.className = 'ccg-practice-choice';
+      group.appendChild(element('legend', option.name));
 
-      var row = element('label');
-      row.className = 'ccg-checkbox';
-      row.setAttribute('for', input.id);
+      var segments = element('span');
+      segments.className = 'ccg-segments';
+      PRACTICE_CHOICES.forEach(function (choice) {
+        segments.appendChild(practiceChoice(option, choice, onChange));
+      });
 
-      var name = element('span', option.name);
-      name.className = 'ccg-checkbox__name';
-
-      row.appendChild(input);
-      row.appendChild(name);
-
-      var count = element('span', option.count);
-      count.className = 'ccg-checkbox__count';
-      row.appendChild(count);
-      container.appendChild(row);
+      group.appendChild(segments);
+      container.appendChild(group);
     });
   }
 
-  function practiceSummaryText(keys, practices) {
-    if (keys.length === 0) return 'Any';
-    if (keys.length === 1) {
-      return practices.filter(function (practice) {
-        return practice.key === keys[0];
-      })[0].shortName;
-    }
-    return keys.length + ' selected';
+  function practiceSummaryText(filters, practices) {
+    var has = practiceKeys(filters);
+    var lacks = withoutPracticeKeys(filters);
+    var total = has.length + lacks.length;
+
+    if (total === 0) return 'Any';
+    if (total > 1) return total + ' selected';
+
+    var key = has.length ? has[0] : lacks[0];
+    var name = practices.filter(function (practice) {
+      return practice.key === key;
+    })[0].shortName;
+    return has.length ? name : name + ' not reported';
   }
 
   function wireDropdown(details) {
@@ -1501,13 +1546,13 @@
     });
   }
 
-  function checkedPractices(container) {
+  function chosenPractices(container, value) {
     return findAll(container, '[data-ccg-practice]')
       .filter(function (input) {
-        return input.checked;
+        return input.checked && input.value === value;
       })
       .map(function (input) {
-        return input.value;
+        return input.getAttribute('data-ccg-practice');
       });
   }
 
@@ -1520,8 +1565,11 @@
     var input = find(form, '#ccg-search-input');
     var status = find(root, '#ccg-result-status');
 
-    fillPracticeCheckboxes(practices, practiceFilterOptions(meta(), stats()), function () {
-      store.set({ practices: checkedPractices(practices) });
+    fillPracticeChoices(practices, practiceFilterOptions(meta(), stats()), function () {
+      store.set({
+        practices: chosenPractices(practices, 'has'),
+        withoutPractices: chosenPractices(practices, 'lacks')
+      });
     });
     fillOptions(population, populationOptions(meta(), stats()));
     wireDropdown(find(form, '.ccg-dropdown'));
@@ -1542,12 +1590,12 @@
     });
 
     function clearAll() {
-      findAll(practices, '[data-ccg-practice]').forEach(function (box) {
-        box.checked = false;
+      findAll(practices, '[data-ccg-practice]').forEach(function (radio) {
+        radio.checked = radio.value === 'any';
       });
       population.value = 'all';
       input.value = '';
-      store.set({ practices: [], sizeBucket: 'all', query: '' });
+      store.set({ practices: [], withoutPractices: [], sizeBucket: 'all', query: '' });
     }
 
     find(form, '[data-ccg-action="clear-filters"]').addEventListener('click', function () {
@@ -1568,7 +1616,7 @@
         stats().totalCities,
         { shown: places.shown.length, total: places.total }
       );
-      practiceState.textContent = practiceSummaryText(practiceKeys(filters), meta().practices);
+      practiceState.textContent = practiceSummaryText(filters, meta().practices);
     }
 
     store.subscribe(showStatus);
